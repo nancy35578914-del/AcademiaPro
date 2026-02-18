@@ -30,6 +30,10 @@ SUPPORT_CHAT_TAG = "[Support]"
 AI_THREAD_TAG = "ai_guest_thread_id"
 
 
+def _otp_enabled():
+    return bool(current_app.config.get("EMAIL_OTP_ENABLED", False))
+
+
 def _get_guest_thread_id():
     thread_id = session.get("guest_thread_id")
     if not thread_id:
@@ -426,7 +430,13 @@ def register():
             flash("An account with that email already exists. Please log in.", "warning")
             return redirect(url_for("main.login"))
         hashed_pw = generate_password_hash(form.password.data)
-        user = User(email=email, name=form.name.data.strip(), password_hash=hashed_pw, role="client", email_verified=False)
+        user = User(
+            email=email,
+            name=form.name.data.strip(),
+            password_hash=hashed_pw,
+            role="client",
+            email_verified=not _otp_enabled(),
+        )
         db.session.add(user)
         try:
             db.session.commit()
@@ -434,18 +444,24 @@ def register():
             db.session.rollback()
             flash("An account with that email already exists. Please log in.", "warning")
             return redirect(url_for("main.login"))
-        otp = _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
-        session["pending_signup_user_id"] = user.id
-        if otp:
-            flash("Account created. Enter the OTP sent to your email to verify your account.", "info")
-        else:
-            flash("Account created, but OTP delivery failed. Click Resend OTP after checking email settings.", "warning")
-        return redirect(url_for('main.verify_email'))
+        if _otp_enabled():
+            otp = _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
+            session["pending_signup_user_id"] = user.id
+            if otp:
+                flash("Account created. Enter the OTP sent to your email to verify your account.", "info")
+            else:
+                flash("Account created, but OTP delivery failed. Click Resend OTP after checking email settings.", "warning")
+            return redirect(url_for('main.verify_email'))
+        flash("Account created successfully. You can now sign in.", "success")
+        return redirect(url_for("main.login"))
     return render_template('register.html', form=form)
 
 
 @main.route("/verify-email", methods=["GET", "POST"])
 def verify_email():
+    if not _otp_enabled():
+        flash("Email verification is temporarily disabled for testing.", "info")
+        return redirect(url_for("main.login"))
     pending_user_id = session.get("pending_signup_user_id")
     if not pending_user_id:
         flash("No pending email verification request found.", "warning")
@@ -574,7 +590,7 @@ def login():
         if user and check_password_hash(user.password_hash, form.password.data):
             verification_rollout_date = datetime(2026, 2, 18)
             requires_verification = (user.created_at or datetime.utcnow()) >= verification_rollout_date
-            if requires_verification and not user.email_verified and not user.is_admin:
+            if _otp_enabled() and requires_verification and not user.email_verified and not user.is_admin:
                 session["pending_signup_user_id"] = user.id
                 flash("Please verify your email before signing in.", "warning")
                 return redirect(url_for("main.verify_email"))
@@ -875,6 +891,11 @@ def profile():
             db.session.rollback()
             flash("That email is already used by another account.", "danger")
             return render_template("profile.html", form=form)
+        if pending_password_hash and not _otp_enabled():
+            current_user.password_hash = pending_password_hash
+            db.session.commit()
+            flash("Profile updated and password changed.", "success")
+            return redirect(url_for("main.profile"))
         if pending_password_hash:
             session["pending_password_hash"] = pending_password_hash
             otp = _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
@@ -938,6 +959,11 @@ def settings():
             db.session.rollback()
             flash("That email is already used by another account.", "danger")
             return render_template("settings.html", form=form)
+        if pending_password_hash and not _otp_enabled():
+            current_user.password_hash = pending_password_hash
+            db.session.commit()
+            flash("Settings saved and password changed.", "success")
+            return redirect(url_for("main.settings"))
         if pending_password_hash:
             session["pending_password_hash"] = pending_password_hash
             otp = _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
@@ -981,6 +1007,19 @@ def export_user_data():
 @main.route("/settings/request-delete", methods=["POST"])
 @login_required
 def request_delete_account():
+    if not _otp_enabled():
+        db.session.add(
+            SupportTicket(
+                user_id=current_user.id,
+                subject="Account Deletion Request",
+                message="User requested account deletion while OTP verification is disabled.",
+                priority="high",
+                status="open",
+            )
+        )
+        db.session.commit()
+        flash("Deletion request sent to admin for processing.", "info")
+        return redirect(url_for("main.settings"))
     otp = _issue_otp(email=current_user.email, purpose="delete_account", user_id=current_user.id, minutes=10)
     if not otp:
         flash("Unable to issue deletion OTP now. Please try again later.", "warning")
@@ -993,6 +1032,9 @@ def request_delete_account():
 @main.route("/settings/verify-password-change", methods=["GET", "POST"])
 @login_required
 def verify_password_change():
+    if not _otp_enabled():
+        flash("Password OTP verification is temporarily disabled.", "info")
+        return redirect(url_for("main.settings"))
     pending_hash = session.get("pending_password_hash")
     if not pending_hash:
         flash("No pending password change request found.", "warning")
@@ -1020,6 +1062,9 @@ def verify_password_change():
 @main.route("/settings/verify-delete-account", methods=["GET", "POST"])
 @login_required
 def verify_delete_account():
+    if not _otp_enabled():
+        flash("Account deletion OTP verification is temporarily disabled.", "info")
+        return redirect(url_for("main.settings"))
     pending_uid = session.get("pending_delete_user_id")
     if pending_uid != current_user.id:
         flash("No pending account deletion request found.", "warning")
