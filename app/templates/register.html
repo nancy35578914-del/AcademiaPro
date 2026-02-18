@@ -43,7 +43,7 @@
           <div class="text-danger small mt-1">{{ form.accept_privacy.errors[0] }}</div>
         {% endif %}
       </div>
-      {{ form.submit(class="btn btn-primary w-100 auth-btn", value="Create Account") }}
+      {{ form.submit(class="btn btn-primary w-100 auth-btn", value="Create Account", id="registerSubmit", disabled=True) }}
     </form>
     <div class="auth-foot">
       <span>Already have an account?</span>
@@ -51,4 +51,23 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const terms = document.getElementById("acceptTerms");
+    const privacy = document.getElementById("acceptPrivacy");
+    const submitBtn = document.getElementById("registerSubmit");
+    if (!terms || !privacy || !submitBtn) return;
+
+    function syncSubmitState() {
+      submitBtn.disabled = !(terms.checked && privacy.checked);
+    }
+
+    terms.addEventListener("change", syncSubmitState);
+    privacy.addEventListener("change", syncSubmitState);
+    syncSubmitState();
+  })();
+</script>
 {% endblock %}
