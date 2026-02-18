@@ -19,6 +19,8 @@ def create_app():
     app.config.setdefault('MAIL_USE_TLS', True)
     app.config.setdefault('MAIL_USERNAME', '')
     app.config.setdefault('MAIL_PASSWORD', '')
+    app.config.setdefault('MAIL_TIMEOUT', 10)
+    app.config.setdefault('MAIL_MAX_EMAILS', 5)
     app.config.setdefault('MAIL_DEFAULT_SENDER', app.config.get('MAIL_USERNAME') or 'noreply@academicpro.local')
 
     # Initialize extensions
