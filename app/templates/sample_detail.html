@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Sample | {{ sample.title }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="mb-3">
+    <a href="{{ url_for('main.Samples') }}" class="btn btn-sm btn-outline-secondary">Back to Samples</a>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="mb-2">
+        <span class="badge bg-light text-dark me-1">{{ sample.style or "Style N/A" }}</span>
+        <span class="badge bg-light text-dark me-1">{{ sample.level or "Level N/A" }}</span>
+        <span class="badge bg-light text-dark">{{ sample.subject or "Subject N/A" }}</span>
+      </div>
+      <h3 class="mb-1">{{ sample.title }}</h3>
+      <p class="text-muted">{{ sample.category }}</p>
+      <div class="mb-3">
+        <div><strong>Grade/Mark:</strong> {{ sample.grade or "Not listed" }}</div>
+        <div><strong>Published:</strong> {{ sample.published_at.strftime("%b %d, %Y") if sample.published_at else "Not listed" }}</div>
+      </div>
+      <p>{{ sample.content }}</p>
+      <div class="d-flex flex-wrap gap-2">
+        {% if sample.file_name %}
+          <a class="btn btn-primary" href="{{ url_for('static', filename='uploads/samples/' ~ sample.file_name) }}" target="_blank">Download File</a>
+        {% endif %}
+        {% if sample.source_url %}
+          <a class="btn btn-outline-primary" href="{{ sample.source_url }}" target="_blank">View Source</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if sample.file_name and sample.file_type == "pdf" %}
+    <div class="card shadow-sm mt-4">
+      <div class="card-body">
+        <h5 class="mb-3">Preview</h5>
+        <iframe title="Sample preview" src="{{ url_for('static', filename='uploads/samples/' ~ sample.file_name) }}" style="width:100%; height:600px; border:0;"></iframe>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

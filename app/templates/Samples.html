@@ -1,22 +1,91 @@
 {% extends "base.html" %}
+{% block title %}Samples Library | AcademicPro{% endblock %}
 {% block content %}
 <div class="container py-5">
-  <h2 class="text-center text-primary mb-4">📘 Writing Samples</h2>
+  <div class="text-center mb-4">
+    <h2 class="text-primary mb-2">Academic Sample Library</h2>
+    <p class="text-muted mb-0">Filter by style, level, and subject. Each sample includes metadata to help you match your academic needs quickly.</p>
+  </div>
 
-  {% if samples %}
-    <div class="row g-4">
-      {% for sample in samples %}
-        <div class="col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">{{ sample.title }}</h5>
-              <p class="text-muted">{{ sample.category }}</p>
-              <p class="card-text">{{ sample.content[:200] }}...</p>
+  <form method="GET" class="row g-2 align-items-end mb-4">
+    <div class="col-lg-4">
+      <label class="form-label small text-muted">Search</label>
+      <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search title, subject, category">
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <label class="form-label small text-muted">Formatting Style</label>
+      <select name="style" class="form-select">
+        <option value="">All Styles</option>
+        {% for style in styles %}
+          <option value="{{ style }}" {% if selected_style == style %}selected{% endif %}>{{ style }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <label class="form-label small text-muted">Academic Level</label>
+      <select name="level" class="form-select">
+        <option value="">All Levels</option>
+        {% for level in levels %}
+          <option value="{{ level }}" {% if selected_level == level %}selected{% endif %}>{{ level }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 col-lg-2">
+      <label class="form-label small text-muted">Subject</label>
+      <select name="subject" class="form-select">
+        <option value="">All Subjects</option>
+        {% for subject in subjects %}
+          <option value="{{ subject }}" {% if selected_subject == subject %}selected{% endif %}>{{ subject }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 col-lg-2">
+      <label class="form-label small text-muted">Category</label>
+      <select name="category" class="form-select">
+        <option value="">All Categories</option>
+        {% for category in categories %}
+          <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-lg-2 d-grid">
+      <button class="btn btn-primary">Apply Filters</button>
+    </div>
+  </form>
+
+  {% if grouped_samples %}
+    {% for category, items in grouped_samples %}
+      <div class="d-flex align-items-center justify-content-between mt-4 mb-3">
+        <h4 class="mb-0">{{ category }}</h4>
+        <span class="text-muted small">{{ items|length }} items</span>
+      </div>
+      <div class="row g-4">
+        {% for sample in items %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-body d-flex flex-column">
+                <div class="mb-2">
+                  <span class="badge bg-light text-dark me-1">{{ sample.style or "Style N/A" }}</span>
+                  <span class="badge bg-light text-dark me-1">{{ sample.level or "Level N/A" }}</span>
+                  <span class="badge bg-light text-dark">{{ sample.subject or "Subject N/A" }}</span>
+                </div>
+                <h5 class="card-title">{{ sample.title }}</h5>
+                <p class="text-muted mb-2">{{ sample.category }}</p>
+                <p class="card-text">{{ sample.content[:220] }}{% if sample.content|length > 220 %}...{% endif %}</p>
+                <div class="mt-auto d-flex flex-wrap gap-2">
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.sample_detail', sample_id=sample.id) }}">Quick View</a>
+                  {% if sample.file_name %}
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('static', filename='uploads/samples/' ~ sample.file_name) }}" target="_blank">Download</a>
+                  {% elif sample.source_url %}
+                    <a class="btn btn-sm btn-primary" href="{{ sample.source_url }}" target="_blank">Source</a>
+                  {% endif %}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      {% endfor %}
-    </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
   {% else %}
     <p class="text-center text-muted">No samples available yet.</p>
   {% endif %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <h2 class="fw-bold text-primary mb-4">📦 My Orders</h2>
+  <h2 class="fw-bold text-primary mb-4">My Orders</h2>
 
   {% if orders %}
     <table class="table table-bordered">
@@ -11,6 +11,7 @@
           <th>Status</th>
           <th>Deadline</th>
           <th>Date Submitted</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -18,14 +19,16 @@
         <tr>
           <td>{{ order.topic }}</td>
           <td>{{ order.status }}</td>
-          <td>{{ order.deadline.strftime('%b %d, %Y') }}</td>
+          <td>{{ order.deadline.strftime('%b %d, %Y') if order.deadline else 'N/A' }}</td>
           <td>{{ order.created_at.strftime('%b %d, %Y') }}</td>
+          <td><a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">Chat</a></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   {% else %}
-    <p class="text-muted">You haven’t placed any orders yet.</p>
+    <p class="text-muted">You have not placed any orders yet.</p>
   {% endif %}
 </div>
 {% endblock %}
+

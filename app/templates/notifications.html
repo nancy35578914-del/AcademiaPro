@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Notifications | AcademicPro{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Notifications</h1>
+{% if notices %}
+<div class="list-group shadow-sm">
+  {% for n in notices %}
+  <div class="list-group-item d-flex justify-content-between align-items-start">
+    <div>
+      <div>{{ n.content }}</div>
+      <div class="small text-muted">{{ n.timestamp.strftime('%Y-%m-%d %H:%M') if n.timestamp else '' }}</div>
+    </div>
+    {% if not n.is_read %}<span class="badge bg-danger">new</span>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-light border">No notifications yet.</div>
+{% endif %}
+{% endblock %}

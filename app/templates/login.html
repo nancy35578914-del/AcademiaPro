@@ -1,16 +1,29 @@
 {% extends "base.html" %}
+{% block title %}Sign In | AcademicPro{% endblock %}
 {% block content %}
-<div class="container mt-5">
-  <h2>Login</h2>
-  <form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-      {{ form.email.label }} {{ form.email(class="form-control") }}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-head">
+      <h2 class="auth-title">Welcome Back</h2>
+      <p class="auth-subtitle">Sign in to continue managing your orders and messages.</p>
     </div>
-    <div class="mb-3">
-      {{ form.password.label }} {{ form.password(class="form-control") }}
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.email.label(class="form-label fw-semibold") }}
+        {{ form.email(class="form-control auth-input", placeholder="you@example.com") }}
+      </div>
+      <div class="mb-3">
+        {{ form.password.label(class="form-label fw-semibold") }}
+        {{ form.password(class="form-control auth-input", placeholder="Enter password") }}
+      </div>
+      {{ form.submit(class="btn btn-primary w-100 auth-btn") }}
+    </form>
+    <div class="auth-foot">
+      <span>New here?</span>
+      <a href="{{ url_for('main.register') }}">Create account</a>
     </div>
-    {{ form.submit(class="btn btn-primary") }}
-  </form>
+    <p class="small mt-2 mb-0">Admin? <a href="{{ url_for('main.admin_login') }}">Go to Admin Login</a></p>
+  </div>
 </div>
 {% endblock %}

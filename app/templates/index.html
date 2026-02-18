@@ -1,584 +1,261 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>AcademiaPro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/scrollreveal/4.0.9/scrollreveal.min.js"></script>
-</head>
-<body>
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-  <a class="navbar-brand fw-bold" href="#">AcademiaPro</a>
-  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarNav">
-    <ul class="navbar-nav ms-auto">
-      <li class="nav-item">
-  <a class="nav-link" href="{{ url_for('main.order') }}">Place Order</a>
-</li>
-      <ul class="navbar-nav ms-auto">
-  ...
-  <li class="nav-item">
-    <a class="nav-link" href="{{ url_for('main.order') }}">Place Order</a>
-  </li>
-</ul>
-    <ul class="navbar-nav ms-auto">
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="helpDropdown" role="button" data-bs-toggle="dropdown">
-          Writing Help
-        </a>
-        <ul class="dropdown-menu">
-          {% for file in files %}
-          <li>
-            <a class="dropdown-item" href="{{ url_for('static', filename='uploads/' + file) }}" target="_blank">
-              {{ file }}
-            </a>
-          </li>
-          {% endfor %}
-        </ul>
-      </li>
-      <a href="{{ url_for('main.public_writers') }}" class="btn btn-outline-primary">View Writers</a>
-
-      <a href="{{ url_for('main.Samples') }}" class="btn btn-outline-primary">Samples</a>
-
-       <a href="{{ url_for('main.public_blogs') }}" class="btn btn-outline-primary">Blog</a>
-
-      <a class="btn btn-outline-primary" href="{{ url_for('main.login') }}">Login</a>
- 
-      <a href="{{ url_for('main.register') }}" class="btn btn-outline-primary">Register now</a>
-    {% if current_user.is_authenticated %}
-  <div class="user-profile" style="text-align:center;">
-    <a href="{{ url_for('main.dashboard') }}">
-      {% if current_user.photo %}
-        <img src="{{ url_for('static', filename='uploads/' ~ current_user.photo) }}"
-             alt="Profile Photo"
-             width="80" height="80"
-             style="border-radius:50%; object-fit:cover; border:3px solid #003366; box-shadow:0 0 10px #ccc;">
-      {% else %}
-        <img src="{{ url_for('static', filename='default_avatar.png') }}"
-             alt="Default Avatar"
-             width="80" height="80"
-             style="border-radius:50%; object-fit:cover; border:3px solid #003366; box-shadow:0 0 10px #ccc;">
-      {% endif %}
-    </a>
-    <p>{{ current_user.name }}</p>
-  </div>
-{% endif %}
-    </ul>
-  </div>
-</nav>
-
-<nav aria-label="Page navigation">
-  <ul class="pagination justify-content-center">
-    {% if announcements.has_prev %}
-      <li class="page-item">
-        <a class="page-link" href="{{ url_for('main.index', page=announcements.prev_num, category=selected_category) }}">Previous</a>
-      </li>
-    {% endif %}
-
-    {% if announcements.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="{{ url_for('main.index', page=announcements.next_num, category=selected_category) }}">Next</a>
-      </li>
-    {% endif %}
-  </ul>
-</nav>
-
-<!-- Hero Section -->
-<section class="hero text-white text-center d-flex align-items-center" style="height: 60vh; background-color: #003366;">
-  <div class="container">
-    <h1 class="display-4 fw-bold">We are here to Help You Write Your Essay</h1>
-    <p class="lead">From initial topic to finished paper</p>
-    <form method="POST" action="{{ url_for('main.lead') }}" class="row justify-content-center mt-4">
-      <div class="col-md-6 col-sm-10">
-        <input name="topic" type="text" class="form-control" placeholder="Tell us the topic you're stuck with" required>
-      </div>
-      <div class="col-auto mt-2 mt-md-0">
-        <button type="submit" class="btn btn-warning">Get Started</button>
-      </div>
-    </form>
-  </div>
-</section>
-<!-- Value Propositions -->
-<section class="bg-light py-5">
-  <div class="container">
-    <div class="row text-center g-4">
-      <div class="col-md-4 fade-in">
-        <div class="icon-box p-4 border rounded shadow-sm h-100">
-          <i class="fas fa-bolt fa-2x mb-3 text-primary"></i>
-          <h5 class="fw-bold">Easy Process</h5>
-          <p class="text-muted">Quick and intuitive steps from topic to submission.</p>
-        </div>
-      </div>
-      <div class="col-md-4 fade-in">
-        <div class="icon-box p-4 border rounded shadow-sm h-100">
-          <i class="fas fa-headset fa-2x mb-3 text-success"></i>
-          <h5 class="fw-bold">24/7 Support</h5>
-          <p class="text-muted">Get help from our support team any time of day or night.</p>
-        </div>
-      </div>
-      <div class="col-md-4 fade-in">
-        <div class="icon-box p-4 border rounded shadow-sm h-100">
-          <i class="fas fa-clock fa-2x mb-3 text-danger"></i>
-          <h5 class="fw-bold">Time Saver</h5>
-          <p class="text-muted">Save hours of your time with expert writing help.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- How It Works -->
-<section class="py-5 text-center">
-  <div class="container">
-    <h2 class="mb-4 fw-bold">How It Works</h2>
-    <div class="row gy-4">
-      <div class="col-md-3 col-sm-6">
-        <div class="p-3 border rounded h-100">
-          <span class="fs-1 text-primary">1️⃣</span>
-          <h5 class="mt-3">Submit Instructions</h5>
-          <p class="small text-muted">Tell us what you need done, including topic, length, and deadline.</p>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6">
-        <div class="p-3 border rounded h-100">
-          <span class="fs-1 text-success">2️⃣</span>
-          <h5 class="mt-3">Choose Writer</h5>
-          <p class="small text-muted">Review top-rated writers and pick the best fit for your project.</p>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6">
-        <div class="p-3 border rounded h-100">
-          <span class="fs-1 text-warning">3️⃣</span>
-          <h5 class="mt-3">Deposit Payment</h5>
-          <p class="small text-muted">Place your deposit securely. Writer starts immediately after confirmation.</p>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6">
-        <div class="p-3 border rounded h-100">
-          <span class="fs-1 text-danger">4️⃣</span>
-          <h5 class="mt-3">Revise & Release</h5>
-          <p class="small text-muted">Review the final draft, request changes, then release full payment.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- Top Writers -->
-<section class="py-5 bg-light text-center">
-  <div class="container">
-    <h2 class="mb-4 fw-bold">Top Writers</h2>
-
-    <div class="row justify-content-center g-4">
-      {% for w in writers %}
-      <div class="col-md-4 col-sm-6">
-        <div class="card shadow h-100">
-          {% if w.image_url %}
-          <img src="{{ w.image_url }}" class="card-img-top" alt="Writer Image">
-          {% endif %}
-          <div class="card-body">
-            <h5 class="card-title fw-semibold">{{ w.name }}</h5>
-            <p class="card-text text-muted mb-1">⭐ {{ w.rating }} | {{ w.orders }} orders</p>
-            <p class="card-text small">{{ w.subject }}</p>
-            <a href="#" class="btn btn-outline-primary btn-sm">Hire Writer</a>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<div class="mt-5 text-center">
-  <h4>🎓 Want to Become a Writer?</h4>
-  <a href="{{ url_for('main.writer_apply') }}" class="btn btn-primary">Apply Here</a>
-</div>
-<!-- Testimonials + Reviews -->
-<section class="container py-5 bg-light">
-  <div class="row g-4">
-    <div class="col-md-6">
-      <h2 class="mb-4 text-center">What Students Say</h2>
-      {% for t in testimonials %}
-      <div class="card mb-3">
-        <div class="card-body">
-          <p>{% for _ in range(t.rating) %}⭐{% endfor %} "{{ t.content }}"</p>
-          <p class="text-muted mb-0">- {{ t.name }}</p>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    <div class="col-md-6">
-      <h2 class="mb-4 text-center">Reviews About AcademiaPro</h2>
-      {% for r in reviews %}
-      <blockquote class="blockquote border-start border-4 ps-3 mb-4">
-        <p>"{{ r.comment }}"</p>
-        <footer class="blockquote-footer">{{ r.reviewer }} – {{ r.stars }}⭐</footer>
-      </blockquote>
-      {% else %}
-      <p>No site reviews yet.</p>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-<!-- Writing Services -->
-<section class="py-5 bg-light">
-  <div class="container">
-    <h2 class="mb-4 text-center fw-bold">Types of Writing Services We Offer</h2>
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3 text-center">
-      <div class="col">
-        <div class="p-3 border rounded">Essay Writing</div>
-      </div>
-      <div class="col">
-        <div class="p-3 border rounded">Research Papers</div>
-      </div>
-      <div class="col">
-        <div class="p-3 border rounded">Case Studies</div>
-      </div>
-      <div class="col">
-        <div class="p-3 border rounded">Book Reports</div>
-      </div>
-      <div class="col">
-        <div class="p-3 border rounded">Theses</div>
-      </div>
-      <div class="col">
-        <div class="p-3 border rounded">Speeches</div>
-      </div>
-      <div class="col">
-        <div class="p-3 border rounded">Dissertation Help</div>
-      </div>
-      <div class="col">
-        <div class="p-3 border rounded">Assignments</div>
-      </div>
-    </div>
-  </div>
-</section>
-<section class="py-5 text-center">
-  <div class="container">
-    <h2 class="mb-4 fw-bold">Included Free Features</h2>
-    <p class="mb-5 lead text-muted">Save money with every order — all these benefits come at no extra cost!</p>
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
-      <div class="col">
-        <div class="border p-3 rounded bg-light h-100">
-          <h5 class="text-success mb-2">✔ Title Page</h5>
-          <p class="small text-muted mb-0">Included for free</p>
-        </div>
-      </div>
-      <div class="col">
-        <div class="border p-3 rounded bg-light h-100">
-          <h5 class="text-success mb-2">✔ Reference Page</h5>
-          <p class="small text-muted mb-0">Included for free</p>
-        </div>
-      </div>
-      <div class="col">
-        <div class="border p-3 rounded bg-light h-100">
-          <h5 class="text-success mb-2">✔ Originality Check</h5>
-          <p class="small text-muted mb-0">100% Plagiarism-Free Guarantee</p>
-        </div>
-      </div>
-      <div class="col">
-        <div class="border p-3 rounded bg-light h-100">
-          <h5 class="text-success mb-2">✔ Formatting</h5>
-          <p class="small text-muted mb-0">APA, MLA, Chicago & more</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-<section class="py-5 text-white text-center" style="background-color: #003366;">
-  <div class="container">
-    <h2 class="fw-bold mb-3">Need Help Getting Started?</h2>
-    <p class="lead mb-4">Our experts are just a click away. Get custom writing support tailored to your needs.</p>
+﻿{% extends "base.html" %}
+{% block title %}AcademicPro - Home{% endblock %}
+{% block content %}
+<section class="home-hero text-center py-5">
+  <h1 class="display-5 fw-bold">Expert Academic Support, Anytime You Need It</h1>
+  <p class="lead text-muted">Fast, affordable, and confidential writing help for students worldwide.</p>
+  <div class="d-flex justify-content-center gap-2 flex-wrap">
     <a href="{{ url_for('main.order') }}" class="btn btn-primary btn-lg">Order Now</a>
+    <a href="{{ url_for('main.public_writers') }}" class="btn btn-outline-primary btn-lg">View Writers</a>
   </div>
 </section>
-<!-- Promo + Writing Wizard Section -->
-<section class="bg-light py-5">
-  <div class="container">
-    <h2 class="text-center fw-bold mb-4">Professional Custom Essay Writing Service</h2>
-    <p> College times must be a headache. Students have to write an unlimited amount of essays, academic research, and different types of assignments in short terms.
-      A little helping hand from professional writers won't be redundant. To make the searching process easy for learners, we've created the most convenient and efficient
-      online custom writing service! You will be impressed by the quality and speedy feedback. Still don’t believe us? Check it yourself!</p>
-    <div class="text-center">
-      <a href="#" class="btn btn-outline-primary">Read more</a>
-    </div>
+
+<section class="mb-5">
+  <div class="row g-3 text-center">
+    <div class="col-md-3"><div class="tile-soft"><div class="metric-value">1200+</div><div class="metric-label">Students Supported</div></div></div>
+    <div class="col-md-3"><div class="tile-soft"><div class="metric-value">3500</div><div class="metric-label">Papers Delivered</div></div></div>
+    <div class="col-md-3"><div class="tile-soft"><div class="metric-value">96%</div><div class="metric-label">On-Time Success</div></div></div>
+    <div class="col-md-3"><div class="tile-soft text-start small"><div>✔ SSL Secure Portal</div><div>✔ Free Similarity Report Included</div><div>✔ Confidentiality Guaranteed</div></div></div>
   </div>
 </section>
-<section class="py-5">
-  <div class="container">
-    <div class="row align-items-center">
-      <div class="col-md-6 mb-4 mb-md-0">
-        <h3 class="fw-bold">Are you a writing wizard?</h3>
-        <p>We are always looking for talented writers and academic experts to join our team.</p>
-        <a href="#" class="btn btn-warning">Become a writer</a>
-      </div>
-      <div class="col-md-3">
-        <h5>Core requirements</h5>
-        <ul class="list-unstyled">
-          <li>⭐ Bachelors degree from an accredited educational institution</li>
-          <li>⭐ Excellent communication skills</li>
-          <li>⭐ Proficiency in the particular area of study</li>
-        </ul>
-      </div>
-      <div class="col-md-3 text-center">
-        <img src="{{ url_for('static', filename='img/writer-photo.png') }}" alt="Writer Photo" class="img-fluid rounded-circle shadow">
-      </div>
-    </div>
+
+<section class="mb-5">
+  <h2 class="section-title text-center">Trust & Transparency</h2>
+  <div class="row g-3">
+    <div class="col-md-4"><div class="tile-soft h-100"><h5>Plagiarism Report Included</h5><p class="mb-0">Every completed order includes a similarity report summary for transparency and quality assurance.</p></div></div>
+    <div class="col-md-4"><div class="tile-soft h-100"><h5>Money-Back & Revision Policy</h5><p class="mb-2">Clear terms for refunds and revisions reduce client risk.</p><a href="{{ url_for('main.payment_policy') }}">View policy</a></div></div>
+    <div class="col-md-4"><div class="tile-soft h-100"><h5>Professional Standards</h5><p class="mb-0">Our internal quality process follows academic integrity, formatting accuracy, and deadline discipline.</p></div></div>
   </div>
 </section>
-<section class="container py-5">
-  <h2 class="text-center text-primary mb-4">📢 Latest Announcements</h2>
-  {% if announcements %}
-    <div class="row">
-      {% for a in announcements %}
-        <div class="col-md-4 mb-3">
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title">{{ a.title }}</h5>
-              <p class="card-text">{{ a.body }}</p>
-              <p class="text-muted small">{{ a.created_at.strftime('%Y-%m-%d') }}</p>
-            </div>
+
+<section class="mb-5">
+  <h2 class="section-title text-center">How It Works</h2>
+  <div class="row g-4">
+    <div class="col-md-6"><div class="how-card"><h5>Submit Instructions</h5><p>Share your topic, length, and deadline.</p></div></div>
+    <div class="col-md-6"><div class="how-card"><h5>Choose Writer</h5><p>Select from top-rated experts in your field.</p></div></div>
+    <div class="col-md-6"><div class="how-card"><h5>Deposit Payment</h5><p>Securely confirm your order.</p></div></div>
+    <div class="col-md-6"><div class="how-card"><h5>Revise & Release</h5><p>Review, request changes, and approve final draft.</p></div></div>
+  </div>
+</section>
+
+<section class="mb-5" id="services">
+  <h2 class="section-title">Our Services</h2>
+  <div class="row g-3">
+    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Essay Writing</h5><p>Narrative, persuasive, analytical, and more.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Research Papers</h5><p>In-depth, well-cited academic research.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Dissertations</h5><p>Comprehensive support for advanced projects.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Assignments</h5><p>Reliable help for coursework and homework.</p></div></div>
+  </div>
+</section>
+
+<section class="mb-5" id="writers">
+  <h2 class="section-title">Meet Our Writers</h2>
+  <div class="row g-3">
+    {% if writers %}
+      {% for w in writers %}
+        <div class="col-md-4">
+          <div class="writer-card h-100">
+            <h5>{{ w.name }}</h5>
+            <p class="text-muted">{{ w.subject or 'Academic Specialist' }}</p>
+            <p class="small text-muted">Rating: {{ w.rating or 0 }} / 5 · {{ review_counts.get(w.id, 0) }} reviews</p>
+            <p class="mb-0">Trusted by students for clarity, structure, and on-time delivery.</p>
           </div>
         </div>
       {% endfor %}
-    </div>
-  {% else %}
-    <p class="text-muted text-center">No announcements available.</p>
+    {% else %}
+      <div class="col-12"><div class="tile-soft">No approved writers yet.</div></div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="mb-5" id="testimonials">
+  <h2 class="section-title">Testimonials</h2>
+  <div class="row g-3">
+    <div class="col-md-6"><div class="tile-soft h-100"><p>"AcademicPro helped me meet my deadline and improve my grade. The process was smooth and professional."</p><small>- Sarah, University Student</small></div></div>
+    <div class="col-md-6"><div class="tile-soft h-100"><p>"I was impressed by the quality of research and the attention to detail. Highly recommended!"</p><small>- Daniel, Graduate Student</small></div></div>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h2 class="section-title">Student Success Stories</h2>
+  <div class="row g-3">
+    <div class="col-md-6"><div class="tile-soft h-100"><h5>Dissertation Rescue (Nursing)</h5><p class="mb-1">Challenge: weak methodology chapter and deadline pressure.</p><p class="mb-0">Outcome: revised structure, evidence-backed data interpretation, and on-time submission with supervisor approval.</p></div></div>
+    <div class="col-md-6"><div class="tile-soft h-100"><h5>Data Analysis Support (Business)</h5><p class="mb-1">Challenge: complex dataset and unclear narrative.</p><p class="mb-0">Outcome: clear analysis framework, visualized findings, and stronger argument quality for final grading.</p></div></div>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h2 class="section-title text-center">Accreditation & Quality Badges</h2>
+  <div class="d-flex flex-wrap justify-content-center gap-3">
+    <span class="badge bg-light text-dark border p-2">Academic Integrity Standard</span>
+    <span class="badge bg-light text-dark border p-2">Secure Payments Verified</span>
+    <span class="badge bg-light text-dark border p-2">Confidential Workflow Certified</span>
+  </div>
+</section>
+
+<section class="mb-5" id="blog">
+  <h2 class="section-title">Blog / Resources</h2>
+  <ul class="list-group">
+    <li class="list-group-item"><a href="{{ url_for('main.public_blogs') }}?q=thesis statement">How to Write a Strong Thesis Statement</a></li>
+    <li class="list-group-item"><a href="{{ url_for('main.public_blogs') }}?q=study hacks">Top 5 Study Hacks for Busy Students</a></li>
+    <li class="list-group-item"><a href="{{ url_for('main.public_blogs') }}?q=plagiarism">Avoiding Plagiarism: A Student’s Guide</a></li>
+  </ul>
+</section>
+
+<section class="cta-band text-center py-4 mb-3">
+  <h2 class="h3 fw-bold">Ready to Ace Your Papers?</h2>
+  <p class="mb-3">Get started today with expert academic support.</p>
+  <a href="{{ url_for('main.order') }}" class="btn btn-warning btn-lg">Place Order</a>
+</section>
+
+<div class="guest-float-stack" aria-label="Guest support tools">
+  <button id="guestAiFab" class="guest-fab ai" type="button" title="AI Support" aria-label="Open AI support">
+    <img src="{{ url_for('static', filename='img/logo-quill.jpg') }}" alt="AcademicPro AI" class="guest-fab-logo">
+  </button>
+  {% if not current_user.is_authenticated %}
+  <button id="guestMsgFab" class="guest-fab msg" type="button" title="Message Admin" aria-label="Message admin">💬</button>
   {% endif %}
-</section>
-<!-- Types of Essays -->
-<section class="container py-5">
-<div class="col-md-6 mb-4 mb-md-0">
-    <h3 class="fw-bold">Types of Essays</h3>
-      <div class="col">
-        <ul class="list-unstyled">
-          <li> Narrative</li>
-          <li> Definition</li>
-          <li> Descriptive</li>
-          <li> Cause and Effect</li>
-          <li> Expository</li>
-          <li> Analytical</li>
-          <li> Persuasive</li>
-          <li> Admission</li>         
-    </ul>
-  </div>
-</section>
-<footer class="bg-dark text-white py-5">
-  <div class="container">
-    <div class="row">
-      
-      <!-- COMPANY -->
-      <div class="col-md-6">
-        <h5 class="fw-bold">Company</h5>
-        <ul class="list-inline">
-          <li class="list-inline-item"><a href="{{ url_for('main.about') }}" class="text-white">About</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.testimonials') }}" class="text-white">Testimonials</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.privacy_policy') }}" class="text-white">Privacy Policy</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.faq') }}" class="text-white">FAQ</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.how_it_works') }}" class="text-white">How it Works</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.contact') }}" class="text-white">Contact Us</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.hiring') }}" class="text-white">We are Hiring</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.terms') }}" class="text-white">Terms</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.fair_use') }}" class="text-white">Fair Use</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.payment_policy') }}" class="text-white">Payment Policy</a></li>
-          <li class="list-inline-item"><a href="{{ url_for('main.dont_buy_accounts') }}" class="text-white">Don't buy accounts</a></li>
-        </ul>
-      </div>
-
-      <!-- SERVICES -->
-      <div class="col-md-6">
-        <h5 class="fw-bold">Services</h5>
-        <ul class="list-unstyled">
-          <li><a href="{{ url_for('main.essay_writing') }}" class="text-white">Essay Writing</a></li>
-          <li><a href="{{ url_for('main.research_papers') }}" class="text-white">Research Papers</a></li>
-          <li><a href="{{ url_for('main.case_studies') }}" class="text-white">Case Studies</a></li>
-          <li><a href="{{ url_for('main.dissertations') }}" class="text-white">Dissertations</a></li>
-          <li><a href="{{ url_for('main.theses') }}" class="text-white">Theses</a></li>
-          <li><a href="{{ url_for('main.speeches') }}" class="text-white">Speeches</a></li>
-          <li><a href="{{ url_for('main.assignments') }}" class="text-white">Assignments</a></li>
-          <li><a href="{{ url_for('main.narrative_essays') }}" class="text-white">Narrative Essays</a></li>
-          <li><a href="{{ url_for('main.analytical_essays') }}" class="text-white">Analytical Essays</a></li>
-          <li><a href="{{ url_for('main.persuasive_essays') }}" class="text-white">Persuasive Essays</a></li>
-          <li><a href="{{ url_for('main.admission_help') }}" class="text-white">Admission Help</a></li>
-          <li><a href="{{ url_for('main.literature_reviews') }}" class="text-white">Literature Reviews</a></li>
-          <li><a href="{{ url_for('main.book_reports') }}" class="text-white">Book Reports</a></li>
-        </ul>
-      </div>
-      <!-- Contact Info -->
-      <div class="col-md-3 mb-4">
-        <h5>Contact Us</h5>
-        <p class="mb-1 small">📧 <a href="mailto:wamukekhestephen@gmail.com" class="text-light text-decoration-none">wamukekhestephen@gmail.com</a></p>
-        <p class="mb-1 small">📞 0721894141 / 0794162912</p>
-        <p class="mb-1 small">💬 <a href="https://wa.me/254721894141" class="text-light text-decoration-none" target="_blank">Chat on WhatsApp</a></p>
-        <p class="small">📍 Mombasa, Kongowea Market</p>
-        <hr class="border-secondary">
-        <form class="d-flex">
-        <input type="email" class="form-control form-control-sm me-2" placeholder="Your Email">
-        <button class="btn btn-outline-light btn-sm">Subscribe</button>
-        </form>
-      </div>
-    </div>
-  </div>
-<!-- Floating Chat Icon -->
-<div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
-  <button onclick="toggleChat()" class="btn btn-success rounded-circle shadow" style="width: 60px; height: 60px;">
-    💬
-  </button>
 </div>
-<!-- Chat Box -->
-<div id="chat-box" class="shadow rounded" style="display: none; position: fixed; bottom: 90px; right: 20px; width: 320px; background: linear-gradient(to bottom, #002b75, #ffffff); z-index: 9999; overflow: hidden; animation: fadeInUp 0.3s ease-out;">
-  <div class="p-3 text-white" style="background-color: #002b75;">
-    <div class="d-flex align-items-center mb-3">
-      <img src="{{ url_for('static', filename='img/chat-avatar.jpg') }}" class="rounded-circle me-2" width="36" height="36">
-      <h6 class="mb-0">Chat Support</h6>
-      <button type="button" onclick="toggleChat()" class="btn-close btn-close-white ms-auto"></button>
-    </div>
-    <h5>Hello there!</h5>
-    <h6 class="fw-bold">How can we help?</h6>
+
+<div id="guestAiPanel" class="guest-panel d-none" role="dialog" aria-label="AI support assistant">
+  <div class="guest-panel-head">
+    <strong>AI Support</strong>
+    <button type="button" class="btn-close btn-close-sm" data-close="guestAiPanel" aria-label="Close"></button>
   </div>
-  <div class="bg-white p-3">
-    <div class="mb-3 bg-light p-2 rounded shadow-sm d-flex align-items-center justify-content-between">
-      <div>
-        <strong>Send us a message</strong>
-        <p class="mb-0 small text-muted">We typically reply in under a minute</p>
+  <div id="guestAiBody" class="guest-panel-body">
+    <div class="guest-bubble bot">Ask me about orders, deadlines, writers, or payments.</div>
+  </div>
+  <form id="guestAiForm" class="guest-panel-foot">
+    <input id="guestAiInput" class="form-control form-control-sm" placeholder="Type your question..." required>
+    <button class="btn btn-primary btn-sm" type="submit">Ask</button>
+  </form>
+</div>
+
+{% if not current_user.is_authenticated %}
+<div id="guestMsgPanel" class="guest-panel d-none" role="dialog" aria-label="Guest message panel">
+  <div class="guest-panel-head">
+    <strong>Message Admin</strong>
+    <button type="button" class="btn-close btn-close-sm" data-close="guestMsgPanel" aria-label="Close"></button>
+  </div>
+  <div class="guest-panel-body">
+    <div class="small text-muted mb-2">For follow-up, include your email.</div>
+    <div class="mb-2">
+      <input id="guestMsgEmail" class="form-control form-control-sm" placeholder="Email (optional)">
+    </div>
+    <div class="mb-2">
+      <textarea id="guestMsgInput" rows="4" class="form-control form-control-sm" placeholder="Type your message..." required></textarea>
+    </div>
+    <div id="guestMsgStatus" class="small text-muted"></div>
+  </div>
+  <div class="guest-panel-foot">
+    <button id="guestMsgSendBtn" class="btn btn-primary btn-sm w-100" type="button">Send Message</button>
+  </div>
+</div>
+
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+  <div id="guestWelcomeToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header">
+      <strong class="me-auto">Welcome to AcademicPro</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">
+      We noticed you are visiting as a guest. Create an account to access full order tracking, writer chat, and advanced features.
+      <div class="mt-2 d-flex gap-2">
+        <a class="btn btn-sm btn-primary" href="{{ url_for('main.register') }}">Create Account</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.login') }}">Sign In</a>
       </div>
-      <span class="text-success fs-4">⌛</span>
     </div>
-    <form method="POST" id="chat-form" action="{{ url_for('main.send_message') }}">
-  <div id="chat-messages" class="mb-3" style="height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;">
-    <!-- Chat history will appear here -->
   </div>
-  <div class="input-group">
-    <input type="text" id="user-message" name="message" class="form-control" placeholder="Type your message..." required>
-    <button type="submit" class="btn btn-primary">Send</button>
-  </div>
-</form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
 <script>
-const chatForm = document.getElementById("chat-form");
-const chatMessages = document.getElementById("chat-messages");
-const messageInput = document.getElementById("user-message");
+  (function () {
+    const aiFab = document.getElementById("guestAiFab");
+    const msgFab = document.getElementById("guestMsgFab");
+    const aiPanel = document.getElementById("guestAiPanel");
+    const msgPanel = document.getElementById("guestMsgPanel");
 
-chatForm.addEventListener("submit", function(event) {
-  event.preventDefault();
-  const message = messageInput.value.trim();
-  if (!message) return;
-
-  fetch("/send_message", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ message: message })
-  }).then(res => res.json()).then(data => {
-    if (data.status === "Message sent") {
-      const userBubble = document.createElement("div");
-      userBubble.className = "mb-2 text-end";
-      userBubble.innerHTML = `<span class='badge bg-primary'>${message}</span>`;
-      chatMessages.appendChild(userBubble);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      messageInput.value = "";
+    function togglePanel(panel) {
+      panel.classList.toggle("d-none");
     }
-  });
-});
 
-function loadMessages() {
-  fetch("/get_messages")
-    .then(res => res.json())
-    .then(data => {
-      chatMessages.innerHTML = "";
-      data.forEach(msg => {
-        const bubble = document.createElement("div");
-        bubble.className = "mb-2 " + (msg.is_admin ? "text-start" : "text-end");
-        bubble.innerHTML = `<span class='badge ${msg.is_admin ? 'bg-secondary' : 'bg-primary'}'>${msg.content}</span>`;
-        chatMessages.appendChild(bubble);
+    if (aiFab && aiPanel) aiFab.addEventListener("click", function () { togglePanel(aiPanel); });
+    if (msgFab && msgPanel) msgFab.addEventListener("click", function () { togglePanel(msgPanel); });
+
+    document.querySelectorAll("[data-close]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const id = btn.getAttribute("data-close");
+        const panel = document.getElementById(id);
+        if (panel) panel.classList.add("d-none");
       });
-      chatMessages.scrollTop = chatMessages.scrollHeight;
     });
-}
-loadMessages();
-setInterval(loadMessages, 5000); // Auto refresh every 5s
+
+    const aiForm = document.getElementById("guestAiForm");
+    const aiInput = document.getElementById("guestAiInput");
+    const aiBody = document.getElementById("guestAiBody");
+    if (aiForm && aiInput && aiBody) {
+      aiForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const question = aiInput.value.trim();
+        if (!question) return;
+        aiBody.insertAdjacentHTML("beforeend", '<div class="guest-bubble me">' + question + "</div>");
+        aiInput.value = "";
+        try {
+          const res = await fetch("{{ url_for('main.guest_ai_ask') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question })
+          });
+          const data = await res.json();
+          aiBody.insertAdjacentHTML("beforeend", '<div class="guest-bubble bot">' + (data.answer || "Please try again.") + "</div>");
+          aiBody.scrollTop = aiBody.scrollHeight;
+        } catch (_err) {
+          aiBody.insertAdjacentHTML("beforeend", '<div class="guest-bubble bot">Unable to answer right now.</div>');
+        }
+      });
+    }
+
+    const sendBtn = document.getElementById("guestMsgSendBtn");
+    const msgInput = document.getElementById("guestMsgInput");
+    const msgEmail = document.getElementById("guestMsgEmail");
+    const msgStatus = document.getElementById("guestMsgStatus");
+    if (sendBtn && msgInput && msgStatus) {
+      sendBtn.addEventListener("click", async function () {
+        const message = msgInput.value.trim();
+        const email = msgEmail ? msgEmail.value.trim() : "";
+        if (!message) {
+          msgStatus.textContent = "Message cannot be empty.";
+          return;
+        }
+        msgStatus.textContent = "Sending...";
+        try {
+          const res = await fetch("{{ url_for('main.guest_chat_send') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, message })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            msgStatus.textContent = data.error || "Failed to send.";
+            return;
+          }
+          msgInput.value = "";
+          msgStatus.textContent = data.message || "Message sent.";
+        } catch (_err) {
+          msgStatus.textContent = "Network error. Try again.";
+        }
+      });
+    }
+
+    const guestToast = document.getElementById("guestWelcomeToast");
+    if (guestToast && !sessionStorage.getItem("guest_welcome_seen")) {
+      const toast = new bootstrap.Toast(guestToast, { delay: 9000 });
+      toast.show();
+      sessionStorage.setItem("guest_welcome_seen", "1");
+    }
+  })();
 </script>
-  </div>
-</div>
-<style>
-@keyframes fadeInUp {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-</style>
-<!-- Be sure to include the floating chat box and scripts as needed -->
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-<script>
-  ScrollReveal().reveal('.fade-in', {
-    delay: 300,
-    distance: '50px',
-    origin: 'bottom',
-    duration: 600
-  });
-
-  function toggleChat() {
-    const box = document.getElementById("chat-box");
-    const sound = new Audio("{{ url_for('static', filename='audio/pop.mp3') }}");
-    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
-    if (box.style.display === "block") sound.play();
-  }
-  function toggleChat() {
-    const box = document.getElementById("chat-box");
-    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
-  }
-</script>
-
-<!-- Floating Chat Icon -->
-<div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
-  <button onclick="toggleChat()" class="btn btn-success rounded-circle shadow" style="width: 60px; height: 60px;">
-    💬
-  </button>
-</div>
-<style>
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-</style>
-
-<script>
-  function toggleChat() {
-    const box = document.getElementById("chat-box");
-    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
-  }
-
-  const chatForm = document.getElementById("chat-form");
-  const chatMessages = document.getElementById("chat-messages");
-  const messageInput = document.getElementById("user-message");
-
-  chatForm.addEventListener("submit", function(event) {
-    event.preventDefault();
-    const message = messageInput.value.trim();
-    if (!message) return;
-
-    const userBubble = document.createElement("div");
-    userBubble.className = "mb-2 text-end";
-    userBubble.innerHTML = `<span class='badge bg-primary'>${message}</span>`;
-    chatMessages.appendChild(userBubble);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    messageInput.value = "";
-
-    const adminBubble = document.createElement("div");
-    adminBubble.className = "mb-2 text-start";
-    setTimeout(() => {
-      adminBubble.innerHTML = `<span class='badge bg-secondary'>Thanks! We’ll reply shortly.</span>`;
-      chatMessages.appendChild(adminBubble);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }, 1000);
-  });
-</script>
-    <div class="text-center small">
-      &copy; {{ current_year }} Bwami. All rights reserved.
-    </div>
-  </div>
-</footer>
-
+{% endblock %}

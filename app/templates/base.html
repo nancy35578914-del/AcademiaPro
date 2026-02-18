@@ -1,67 +1,116 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <title>{% block title %}My Website{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Bootstrap 5 CDN -->
+  <title>{% block title %}AcademicPro{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <nav class="navbar navbar-expand-lg site-nav sticky-top" aria-label="Main navigation">
     <div class="container">
-  <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">AcademicPro</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('main.index') }}">
+        <img src="{{ url_for('static', filename='img/logo-quill.jpg') }}" alt="AcademicPro Logo" class="logo-circle">
+        <span>
+          AcademicPro
+          <small class="d-block nav-tagline">Your Partner in Academic Excellence</small>
+        </span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
+
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
+        <ul class="navbar-nav me-auto">
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.public_blogs') }}">Blog</a></li>          
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.writer_apply') }}">Become a Writer</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.services_page') }}">Services</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.public_writers') }}">Writers</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.Samples') }}">Samples</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.public_blogs') }}">Blog</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.contact') }}">Contact</a></li>
-        {% if current_user.is_authenticated %}
-          <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
-         </li>
-        {% endif %}
         </ul>
+
+        <div class="d-flex align-items-center gap-2 ms-lg-3">
+          <a class="btn btn-warning btn-sm fw-semibold" href="{{ url_for('main.order') }}">Place Order</a>
+          <button id="themeToggle" class="btn btn-outline-light btn-sm icon-btn" type="button" aria-label="Toggle theme">☀️</button>
+          {% if current_user.is_authenticated %}
+            <a class="btn btn-outline-light btn-sm position-relative icon-btn" href="{{ url_for('main.notifications') }}" aria-label="Notifications">🔔{% if unread_count and unread_count > 0 %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ unread_count }}</span>{% endif %}</a>
+          {% else %}
+            <a class="btn btn-outline-light btn-sm icon-btn" href="{{ url_for('main.login') }}" aria-label="Notifications">🔔</a>
+          {% endif %}
+          {% if current_user.is_authenticated %}
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.dashboard') }}">Profile</a>
+          {% else %}
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.login') }}">Sign In</a>
+            <a class="btn btn-warning btn-sm fw-semibold" href="{{ url_for('main.register') }}">Sign Up</a>
+          {% endif %}
+        </div>
       </div>
     </div>
   </nav>
-{% if current_user.is_authenticated %}
-  <a class="navbar-brand fw-bold">👋 Welcome, {{ current_user.name }}</span>
-  <a class="btn btn-outline-danger" href="{{ url_for('main.logout') }}">Logout</a>
-{% else %}
-  <a class="btn btn-outline-primary" href="{{ url_for('main.login') }}">Login</a>
-  <a class="btn btn-outline-secondary" href="{{ url_for('main.register') }}">Register</a>
-{% endif %}
 
-  <!-- Page Content -->
-  <main class="container my-5">
+  <main id="main-content" class="container my-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'warning' if category == 'message' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
 
-  {% if current_user.is_authenticated %}
-  <a href="{{ url_for('main.order') }}" class="btn btn-success">Place an Order</a>
-{% else %}
-  <a href="{{ url_for('main.login') }}" class="btn btn-outline-primary">Login to Place Order</a>
-{% endif %}
-
-  <!-- Footer -->
-  <footer class="bg-dark text-white text-center py-4 mt-5">
+  <footer id="contact" class="site-footer py-4 mt-5">
     <div class="container">
-      <p class="mb-0">&copy; {{ current_year }} My Website. All rights reserved.</p>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="small fw-semibold mb-1">Quick Links</div>
+          <div class="small d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.index') }}">Home</a> |
+            <a href="{{ url_for('main.public_blogs') }}">Blog</a> |
+            <a href="{{ url_for('main.contact') }}">Contact</a> |
+            <a href="{{ url_for('main.terms') }}">Terms</a> |
+            <a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a>
+          </div>
+        </div>
+        <div class="col-md-3 small">
+          <div>Email: support@academicpro.com</div>
+          <div>Social: LinkedIn | Twitter | Instagram</div>
+        </div>
+        <div class="col-md-3 small text-md-end">© 2026 AcademicPro - All Rights Reserved</div>
+      </div>
     </div>
   </footer>
 
-  <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      const stored = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const initial = stored || (prefersDark ? 'dark' : 'light');
+      root.setAttribute('data-theme', initial);
+      if (toggle) {
+        toggle.textContent = initial === 'dark' ? '🌙' : '☀️';
+      }
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', next);
+          localStorage.setItem('theme', next);
+          toggle.textContent = next === 'dark' ? '🌙' : '☀️';
+        });
+      }
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

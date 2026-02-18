@@ -1,0 +1,43 @@
+﻿{% extends "base.html" %}
+{% block title %}Services | AcademicPro{% endblock %}
+{% block content %}
+<section class="mb-4">
+  <h1 class="section-title">Our Academic Services</h1>
+  <p>At AcademicPro, we provide tailored academic support across disciplines. Whether you need a short essay or a full dissertation, our experts are here to help you succeed.</p>
+</section>
+
+<section class="mb-4"><h2 class="section-title">Essay Writing</h2>
+  <p>From narrative and descriptive essays to persuasive and analytical papers, our writers craft original, well-structured essays that meet your requirements.</p>
+  <ul><li>Clear arguments and strong thesis statements</li><li>Proper citations and formatting (APA, MLA, Chicago, etc.)</li><li>Customized to your academic level and subject</li></ul>
+</section>
+
+<section class="mb-4"><h2 class="section-title">Research Papers</h2>
+  <p>We deliver in-depth, evidence-based research papers that demonstrate critical thinking and academic rigor.</p>
+  <ul><li>Comprehensive literature reviews</li><li>Accurate data analysis and interpretation</li><li>Properly referenced with scholarly sources</li></ul>
+</section>
+
+<section class="mb-4"><h2 class="section-title">Dissertations & Theses</h2>
+  <p>Our dissertation specialists guide you through complex projects with precision and expertise.</p>
+  <ul><li>Topic selection and proposal development</li><li>Chapter-by-chapter writing support</li><li>Editing and formatting for final submission</li></ul>
+</section>
+
+<section class="mb-4"><h2 class="section-title">Assignments & Coursework</h2>
+  <p>Stay on top of deadlines with reliable help for everyday assignments.</p>
+  <ul><li>Problem-solving for technical subjects</li><li>Case studies and reports</li><li>Short-answer and long-form coursework</li></ul>
+</section>
+
+<section class="mb-4"><h2 class="section-title">Admission Essays</h2>
+  <p>Make a strong impression with compelling personal statements and application essays.</p>
+  <ul><li>Highlight your strengths and achievements</li><li>Tailored to specific institutions and programs</li><li>Polished, authentic, and persuasive</li></ul>
+</section>
+
+<section class="mb-4"><h2 class="section-title">Why Choose Us</h2>
+  <ul><li>24/7 support for urgent deadlines</li><li>Plagiarism-free guarantee</li><li>Secure and confidential portal</li><li>Experienced writers across disciplines</li></ul>
+</section>
+
+<section class="cta-band text-center py-4">
+  <h2 class="h3 fw-bold">Ready to get started?</h2>
+  <p>Choose your service today and let our experts help you achieve academic excellence.</p>
+  <a href="{{ url_for('main.order') }}" class="btn btn-warning btn-lg">Place Order</a>
+</section>
+{% endblock %}

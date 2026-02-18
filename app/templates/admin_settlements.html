@@ -1,0 +1,26 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Settlement & Reconciliation</h1>
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Pending Amount</div><div class="stat-value">${{ summary.pending_amount }}</div></div></div>
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Completed Amount</div><div class="stat-value">${{ summary.completed_amount }}</div></div></div>
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Failed Amount</div><div class="stat-value">${{ summary.failed_amount }}</div></div></div>
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Transactions</div><div class="stat-value">{{ summary.count }}</div></div></div>
+</div>
+<div class="admin-card p-3">
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>User</th><th>Method</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+      {% for p in payments %}
+      <tr>
+        <td>{{ p.user_name }}</td><td>{{ p.method }}</td><td>${{ p.amount or 0 }}</td><td><span class="tag-soft">{{ p.status }}</span></td><td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at else '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted">No payment records yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

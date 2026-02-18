@@ -1,61 +1,60 @@
 {% extends "admin_base.html" %}
 {% block content %}
-
 <div class="container-fluid py-4">
-  <h2 class="mb-4 fw-bold text-primary">🗂 Grouped User Chats</h2>
+  <h2 class="mb-4 fw-bold text-primary">Grouped User Chats</h2>
 
   {% if grouped_chats %}
   <div class="accordion" id="chatAccordion">
-    {% for user, messages in grouped_chats.items() %}
+    {% for partner_id, messages in grouped_chats.items() %}
     <div class="accordion-item mb-3 border rounded shadow-sm">
       <h2 class="accordion-header" id="heading{{ loop.index }}">
         <button class="accordion-button collapsed fw-semibold d-flex justify-content-between" type="button"
                 data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}"
                 aria-expanded="false" aria-controls="collapse{{ loop.index }}">
-          {{ user if user else 'Anonymous User' }}
-          {% if messages|selectattr("is_read", "equalto", False)|list %}
-            <span class="badge bg-danger ms-2">New</span>
+          {% if partner_id == 0 %}
+            Guest Messages
+          {% elif chat_users.get(partner_id) %}
+            {{ chat_users.get(partner_id).name }} ({{ chat_users.get(partner_id).email }})
+          {% else %}
+            User #{{ partner_id }}
+          {% endif %}
+          {% if messages|selectattr("receiver_id", "equalto", current_user.id)|selectattr("is_read", "equalto", False)|list %}
+          <span class="badge bg-danger ms-2">New</span>
           {% endif %}
         </button>
       </h2>
       <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
            aria-labelledby="heading{{ loop.index }}" data-bs-parent="#chatAccordion">
         <div class="accordion-body">
-          
-          <!-- Chat Messages -->
-          <div class="border rounded p-3 mb-3" style="max-height: 300px; overflow-y: auto; background: #f8f9fa;">
+          <div class="border rounded p-3 mb-3" style="max-height: 320px; overflow-y: auto; background: #f8f9fa;">
             {% for msg in messages %}
-              <div class="mb-2 text-{{ 'start' if msg.sender == 'user' else 'end' }}">
-                <span class="badge bg-{{ 'primary' if msg.sender == 'user' else 'secondary' }}">
-                  {{ msg.content }}
-                </span><br>
-                <small class="text-muted">
-                  {% if msg.timestamp %}
-                    {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}
-                  {% else %}
-                    No timestamp
-                  {% endif %}
-                </small>
-              </div>
+            <div class="mb-2 text-{{ 'end' if msg.sender_id == current_user.id else 'start' }}">
+              <span class="badge bg-{{ 'secondary' if msg.sender_id == current_user.id else 'primary' }}">
+                {{ msg.content }}
+              </span><br>
+              <small class="text-muted">
+                {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp else 'No timestamp' }}
+              </small>
+            </div>
             {% endfor %}
           </div>
 
-          <!-- Admin Reply Form -->
+          {% if partner_id != 0 %}
           <form method="POST" class="input-group" action="{{ url_for('main.reply_to_user') }}">
-            <input type="hidden" name="user_id" value="{{ user }}">
-            <input type="text" name="message" class="form-control" placeholder="Reply to {{ user if user else 'Anonymous' }}" required>
+            <input type="hidden" name="user_id" value="{{ partner_id }}">
+            <input type="text" name="message" class="form-control" placeholder="Reply..." required>
             <button type="submit" class="btn btn-success">Send</button>
           </form>
-
+          {% else %}
+          <div class="small text-muted">Guest messages are one-way unless the guest creates an account or provides contact email.</div>
+          {% endif %}
         </div>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-    <div class="alert alert-warning">No messages found.</div>
+  <div class="alert alert-warning">No messages found.</div>
   {% endif %}
 </div>
-
 {% endblock %}
- 

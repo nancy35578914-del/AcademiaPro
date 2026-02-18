@@ -1,29 +1,92 @@
 {% extends "base.html" %}
-
+{% block title %}Settings | AcademicPro{% endblock %}
 {% block content %}
-<h2>Account Settings</h2>
-
-<div class="user-info">
-    <p><strong>Name:</strong> {{ current_user.name }}</p>
-    <p><strong>Email:</strong> {{ current_user.email }}</p>
-</div>
-
-<hr>
-
-<form method="POST" action="{{ url_for('main.settings') }}">
+<div class="container py-4" style="max-width: 980px;">
+  <h1 class="h4 mb-3">Settings</h1>
+  <form method="POST" enctype="multipart/form-data" action="{{ url_for('main.settings') }}">
     {{ form.hidden_tag() }}
-    <div class="form-group">
-        {{ form.name.label }}<br>
-        {{ form.name(class="form-control") }}
+
+    <div class="section-card mb-3">
+      <h2 class="h6 mb-3">1. Account Information</h2>
+      <div class="row g-2">
+        <div class="col-md-6">{{ form.name.label(class='form-label') }} {{ form.name(class="form-control") }}</div>
+        <div class="col-md-6">{{ form.email.label(class='form-label') }} {{ form.email(class="form-control") }}</div>
+        <div class="col-md-6">{{ form.phone.label(class='form-label') }} {{ form.phone(class="form-control", placeholder="+1...") }}</div>
+        <div class="col-md-6">{{ form.academic_level.label(class='form-label') }} {{ form.academic_level(class="form-select") }}</div>
+        <div class="col-md-12">{{ form.expertise_tags.label(class='form-label') }} {{ form.expertise_tags(class="form-control", placeholder="Business, Programming, Humanities") }}</div>
+        <div class="col-md-12">{{ form.photo.label(class='form-label') }} {{ form.photo(class="form-control") }}</div>
+      </div>
     </div>
-    <div class="form-group">
-        {{ form.email.label }}<br>
-        {{ form.email(class="form-control") }}
+
+    <div class="section-card mb-3">
+      <h2 class="h6 mb-3">2. Security & Privacy</h2>
+      <div class="row g-2">
+        <div class="col-md-6">{{ form.password.label(class='form-label') }} {{ form.password(class="form-control") }}</div>
+        <div class="col-md-6">{{ form.confirm_password.label(class='form-label') }} {{ form.confirm_password(class="form-control") }}</div>
+        <div class="col-md-6 form-check mt-2">{{ form.two_factor_enabled(class="form-check-input") }} {{ form.two_factor_enabled.label(class="form-check-label") }}</div>
+        <div class="col-md-6 form-check mt-2">{{ form.profile_public(class="form-check-input") }} {{ form.profile_public.label(class="form-check-label") }}</div>
+        <div class="col-12 small text-muted">Manage devices: current session only on this version.</div>
+      </div>
     </div>
-    <div class="form-group">
-        {{ form.password.label }}<br>
-        {{ form.password(class="form-control") }}
+
+    <div class="section-card mb-3">
+      <h2 class="h6 mb-3">3. Notifications</h2>
+      <div class="row g-2">
+        <div class="col-md-4 form-check">{{ form.notify_email(class="form-check-input") }} {{ form.notify_email.label(class="form-check-label") }}</div>
+        <div class="col-md-4 form-check">{{ form.notify_sms(class="form-check-input") }} {{ form.notify_sms.label(class="form-check-label") }}</div>
+        <div class="col-md-4 form-check">{{ form.notify_in_app(class="form-check-input") }} {{ form.notify_in_app.label(class="form-check-label") }}</div>
+        <div class="col-md-6 form-check">{{ form.alert_order_updates(class="form-check-input") }} {{ form.alert_order_updates.label(class="form-check-label") }}</div>
+        <div class="col-md-6 form-check">{{ form.alert_payment_confirmations(class="form-check-input") }} {{ form.alert_payment_confirmations.label(class="form-check-label") }}</div>
+        <div class="col-md-6 form-check">{{ form.alert_revision_requests(class="form-check-input") }} {{ form.alert_revision_requests.label(class="form-check-label") }}</div>
+        <div class="col-md-6 form-check">{{ form.alert_admin_announcements(class="form-check-input") }} {{ form.alert_admin_announcements.label(class="form-check-label") }}</div>
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary">Update Settings</button>
-</form>
+
+    <div class="section-card mb-3">
+      <h2 class="h6 mb-3">4. Payment & Billing Preferences</h2>
+      <div class="row g-2">
+        <div class="col-md-6">{{ form.billing_method.label(class='form-label') }} {{ form.billing_method(class="form-select") }}</div>
+        <div class="col-md-6">{{ form.payout_method.label(class='form-label') }} {{ form.payout_method(class="form-select") }}</div>
+        <div class="col-md-12 form-check mt-2">{{ form.auto_deposit_notifications(class="form-check-input") }} {{ form.auto_deposit_notifications.label(class="form-check-label") }}</div>
+      </div>
+    </div>
+
+    <div class="section-card mb-3">
+      <h2 class="h6 mb-3">5. Communication Preferences</h2>
+      <div class="row g-2">
+        <div class="col-md-4">{{ form.preferred_language.label(class='form-label') }} {{ form.preferred_language(class="form-select") }}</div>
+        <div class="col-md-4">{{ form.timezone.label(class='form-label') }} {{ form.timezone(class="form-select") }}</div>
+        <div class="col-md-4">{{ form.preferred_channel.label(class='form-label') }} {{ form.preferred_channel(class="form-select") }}</div>
+      </div>
+    </div>
+
+    <div class="section-card mb-3">
+      <h2 class="h6 mb-3">6. Platform Customization</h2>
+      <div class="row g-2">
+        <div class="col-md-4">{{ form.layout_mode.label(class='form-label') }} {{ form.layout_mode(class="form-select") }}</div>
+        <div class="col-md-4">{{ form.citation_style.label(class='form-label') }} {{ form.citation_style(class="form-select") }}</div>
+        <div class="col-md-4">{{ form.favorite_writers.label(class='form-label') }} {{ form.favorite_writers(class="form-control", placeholder="Names or IDs") }}</div>
+      </div>
+      <div class="small text-muted mt-2">Theme switch remains available in the header (icon button).</div>
+    </div>
+
+    <div class="section-card mb-3">
+      <h2 class="h6 mb-3">7. Legal & Compliance</h2>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.terms') }}">Terms of Service</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.payment_policy') }}">Refund Policy</a>
+      </div>
+      <div class="form-check mb-2">{{ form.marketing_opt_in(class="form-check-input") }} {{ form.marketing_opt_in.label(class="form-check-label") }}</div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.export_user_data') }}">Download My Data</a>
+        <form method="POST" action="{{ url_for('main.request_delete_account') }}" onsubmit="return confirm('Submit account deletion request?');">
+          <button class="btn btn-outline-danger btn-sm" type="submit">Request Account Deletion</button>
+        </form>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Settings</button>
+  </form>
+</div>
 {% endblock %}

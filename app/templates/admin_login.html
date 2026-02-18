@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Admin Login | AcademicPro{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 560px;">
+  <div class="card shadow-sm border-0 mt-4">
+    <div class="card-body p-4">
+      <h2 class="h4 mb-3">Admin Login</h2>
+      <p class="text-muted small mb-4">Restricted to platform administrators only.</p>
+      <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+          {{ form.email.label(class="form-label") }}
+          {{ form.email(class="form-control", placeholder="admin@academicpro.com") }}
+        </div>
+        <div class="mb-3">
+          {{ form.password.label(class="form-label") }}
+          {{ form.password(class="form-control", placeholder="Enter password") }}
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Sign In as Admin</button>
+      </form>
+      <div class="small mt-3">
+        Not an admin? <a href="{{ url_for('main.login') }}">Use user login</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

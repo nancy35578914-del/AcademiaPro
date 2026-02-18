@@ -1,44 +1,479 @@
 {% extends "base.html" %}
+{% block title %}Dashboard | AcademicPro{% endblock %}
 {% block content %}
+<div class="dashboard-wrap">
+  {% set compact = (current_user.layout_mode == 'compact') %}
+  {% if writer_enabled %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h2 class="mb-1">Writer Dashboard</h2>
+      <p class="text-muted mb-0">Decision-ready view to reduce admin time and maximize writing time.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.jobs') }}" class="btn btn-primary btn-sm">Marketplace</a>
+      <a href="{{ url_for('main.settings') }}" class="btn btn-outline-secondary btn-sm">Settings</a>
+    </div>
+  </div>
 
-<button class="btn btn-outline-secondary d-md-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#adminSidebar" aria-expanded="false" aria-controls="adminSidebar">
-  ☰ Menu
-</button>
- 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container">
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-    <span class="navbar-toggler-icon"></span>
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="section-card">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <div class="text-muted small">Performance Summary</div>
+            <div class="kpi-big">${{ pending_payout }}</div>
+            <div class="text-muted small">Pending payout balance</div>
+          </div>
+          <div class="kpi-grid">
+            <div class="kpi-mini">
+              <div class="kpi-mini-value">{{ active_writer_orders|length }}</div>
+              <div class="kpi-mini-label">Active</div>
+            </div>
+            <div class="kpi-mini">
+              <div class="kpi-mini-value">{{ revision_writer_orders|length }}</div>
+              <div class="kpi-mini-label">Revisions</div>
+            </div>
+            <div class="kpi-mini">
+              <div class="kpi-mini-value">{{ completed_writer_orders|length }}</div>
+              <div class="kpi-mini-label">Completed</div>
+            </div>
+            <div class="kpi-mini">
+              <div class="kpi-mini-value">${{ total_earnings }}</div>
+              <div class="kpi-mini-label">Lifetime</div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="small text-muted mb-1">Workload completion</div>
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ writer_workload_percent }}%;" aria-valuenow="{{ writer_workload_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="small text-muted mt-1">{{ writer_workload_percent }}% of assigned work completed</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="section-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Up Next</h6>
+          <span class="pill">Closest deadline</span>
+        </div>
+        {% if writer_next_order %}
+          <div class="fw-semibold">#{{ writer_next_order.id }} {{ writer_next_order.topic }}</div>
+          <div class="small text-muted">Due {{ writer_next_order.deadline.strftime('%Y-%m-%d') if writer_next_order.deadline else 'N/A' }}</div>
+          <div class="small text-muted mt-1">Time remaining: <span class="time-remaining" data-deadline="{{ writer_next_order.deadline.isoformat() if writer_next_order.deadline else '' }}">--</span></div>
+          <a href="{{ url_for('main.order_chat', order_id=writer_next_order.id) }}" class="btn btn-outline-primary btn-sm mt-2">Resume Writing</a>
+        {% else %}
+          <div class="text-muted small">No active orders yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="writer-tabs mb-3">
+    <button class="tab-btn active" data-tab="marketplace">Marketplace</button>
+    <button class="tab-btn" data-tab="production">Production</button>
+    <button class="tab-btn" data-tab="finances">Finances</button>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="tab-panel active" data-panel="marketplace">
+        <div class="section-card mb-3">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0">Marketplace</h5>
+            <input id="marketSearch" class="form-control form-control-sm w-auto" placeholder="Search jobs by topic">
+          </div>
+          <div class="small text-muted mt-2 mb-2">Announcements to all writers</div>
+          {% if writer_announcements %}
+          <ul class="list-group list-group-flush mb-3">
+            {% for a in writer_announcements[:4] %}
+            <li class="list-group-item px-0">
+              <div class="fw-semibold small">{{ a.title }}</div>
+              <div class="small text-muted">{{ a.body }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-muted small mb-3">No writer announcements yet.</div>
+          {% endif %}
+
+          <div class="small text-muted mb-2">Available to claim</div>
+          {% if available_orders %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle" id="marketTable">
+              <thead><tr><th>Topic</th><th>Deadline</th><th>Action</th></tr></thead>
+              <tbody>
+                {% for order in available_orders %}
+                <tr data-topic="{{ order.topic|lower }}">
+                  <td>{{ order.topic }}</td>
+                  <td>{{ order.deadline.strftime('%Y-%m-%d') if order.deadline else 'N/A' }}</td>
+                  <td><a href="{{ url_for('main.jobs') }}" class="btn btn-outline-primary btn-sm">Claim / Bid</a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted small">No open orders right now.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="production">
+        <div class="section-card mb-3">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0">Active Workspace</h5>
+            <input id="activeSearch" class="form-control form-control-sm w-auto" placeholder="Search active orders">
+          </div>
+          <div class="small text-muted mt-2 mb-2">Assigned & in progress</div>
+          {% if active_writer_orders %}
+          <div class="d-flex flex-column gap-2" id="activeList">
+            {% for order in active_writer_orders %}
+            <div class="border rounded p-2 d-flex justify-content-between align-items-center" data-topic="{{ order.topic|lower }}">
+              <div>
+                <strong>#{{ order.id }} {{ order.topic }}</strong>
+                <div class="small text-muted">Status: {{ order.status }} | Deadline: {{ order.deadline.strftime('%Y-%m-%d') if order.deadline else 'N/A' }}</div>
+              </div>
+              <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-sm btn-primary">Resume Writing</a>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-muted small">No active assigned orders yet.</div>
+          {% endif %}
+        </div>
+
+        {% if not compact %}
+        <div class="section-card">
+          <h5 class="mb-3">Communication Hub</h5>
+          <div class="small text-muted mb-2">Messages & announcements</div>
+          {% if recent_notifications %}
+          <ul class="list-group list-group-flush">
+            {% for n in recent_notifications %}
+            <li class="list-group-item px-0">
+              <div class="small">{{ n.content }}</div>
+              <div class="small text-muted">{{ n.timestamp.strftime('%Y-%m-%d %H:%M') if n.timestamp else '' }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-muted small">No new notifications.</div>
+          {% endif %}
+          <a href="{{ url_for('main.notifications') }}" class="btn btn-outline-secondary btn-sm mt-2">Open Notifications</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="tab-panel" data-panel="finances">
+        <div class="section-card">
+          <h5 class="mb-3">Earnings & Payments</h5>
+          <div class="small mb-1">Total earnings: <strong>${{ total_earnings }}</strong></div>
+          <div class="small mb-1">Pending payouts: <strong>${{ pending_payout }}</strong></div>
+          <div class="small mb-1">On-time bonus: <strong>${{ on_time_bonus }}</strong></div>
+          <div class="small mb-2">High-rating bonus: <strong>${{ high_rating_bonus }}</strong></div>
+          <button class="btn btn-primary btn-sm w-100 mb-2" disabled>Request Payout (Coming Soon)</button>
+          <div class="small text-muted">Supports PayPal, bank transfer, and mobile money in next phase.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      {% if not compact %}
+      <div class="section-card mb-3">
+        <h5 class="mb-3">Profile Management</h5>
+        <div class="small mb-1"><strong>Name:</strong> {{ current_user.name }}</div>
+        <div class="small mb-1"><strong>Expertise:</strong> {{ writer_subject }}</div>
+        <div class="small mb-2"><strong>Bio:</strong> {{ writer_bio }}</div>
+        <a href="{{ url_for('main.profile') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">Edit Profile</a>
+        <a href="{{ url_for('main.writer_samples') }}" class="btn btn-outline-secondary btn-sm w-100">Upload Samples</a>
+      </div>
+
+      <div class="section-card mb-3">
+        <h5 class="mb-3">Quick Tools</h5>
+        <div class="d-grid gap-2">
+          <a class="btn btn-outline-dark btn-sm" href="https://www.grammarly.com/plagiarism-checker" target="_blank" rel="noopener">Plagiarism Checker</a>
+          <a class="btn btn-outline-dark btn-sm" href="https://app.grammarly.com/" target="_blank" rel="noopener">Grammar Checker</a>
+          <a class="btn btn-outline-dark btn-sm" href="https://www.mybib.com/" target="_blank" rel="noopener">Citation Generator</a>
+          <a class="btn btn-outline-dark btn-sm" href="https://owl.purdue.edu/owl/research_and_citation/resources.html" target="_blank" rel="noopener">Style Guide Library</a>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="section-card">
+        <h5 class="mb-3">Settings & Security</h5>
+        <a href="{{ url_for('main.settings') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">Password & Notification Settings</a>
+        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Enable Two-Factor Authentication (Coming Soon)</button>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h2 class="mb-1">Client Command Center</h2>
+      <p class="text-muted mb-0">Instant visibility into progress, messages, and payments.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.order') }}" class="btn btn-primary btn-sm">Place Order</a>
+      <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-primary btn-sm">Support Tickets</a>
+      <a href="{{ url_for('main.settings') }}" class="btn btn-outline-secondary btn-sm">Settings</a>
+    </div>
+  </div>
+
+  <div class="section-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <div class="text-muted small">Active Order Status</div>
+        {% if client_primary_order %}
+          <div class="fw-semibold">#{{ client_primary_order.id }} {{ client_primary_order.topic }}</div>
+          <div class="small text-muted">Due {{ client_primary_order.deadline.strftime('%Y-%m-%d') if client_primary_order.deadline else 'N/A' }}</div>
+        {% else %}
+          <div class="text-muted small">No active orders yet.</div>
+        {% endif %}
+      </div>
+      <div>
+        {% if client_primary_order %}
+          <div class="small text-muted">Progress</div>
+          <div class="progress" style="width: 220px; height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ client_primary_progress }}%;" aria-valuenow="{{ client_primary_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="small text-muted mt-1">{{ client_primary_progress }}% complete</div>
+        {% endif %}
+      </div>
+      <div class="text-end">
+        {% if client_primary_order %}
+          <div class="small text-muted">Time remaining</div>
+          <div class="fw-semibold time-remaining" data-deadline="{{ client_primary_order.deadline.isoformat() if client_primary_order.deadline else '' }}">--</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row g-3 mt-3">
+      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ client_active_orders|length }}</div><div class="metric-label">Active Orders</div></div></div>
+      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ client_completed_orders|length }}</div><div class="metric-label">Completed Orders</div></div></div>
+      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ client_revision_orders|length }}</div><div class="metric-label">Pending Revisions</div></div></div>
+      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ unread_count }}</div><div class="metric-label">Notifications</div></div></div>
+    </div>
+  </div>
+
+  {% if writer_application and not writer_application.approved %}
+  <div class="alert alert-info">Your writer application is pending admin review.</div>
+  {% elif not writer_application %}
+  <div class="alert alert-secondary d-flex justify-content-between align-items-center">
+    <span>Want writer features? Apply to become a writer.</span>
+    <a href="{{ url_for('main.writer_apply') }}" class="btn btn-sm btn-primary">Apply Now</a>
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="section-card mb-3">
+        <h5 class="mb-3">Order Management</h5>
+        {% if my_orders %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead><tr><th>Topic</th><th>Status</th><th>Assigned Writer</th><th>Timeline</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for order in my_orders %}
+              <tr>
+                <td>{{ order.topic }}</td>
+                <td><span class="badge bg-light text-dark">{{ order.status }}</span></td>
+                <td>
+                  {% set w = assigned_writer_map.get(order.id) %}
+                  {% if w %}
+                    {{ w.name }}
+                    <div class="small text-muted">Last active: Recently</div>
+                  {% else %}
+                    <span class="text-muted">Pending assignment</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="timeline">
+                    <span class="step done">Assigned</span>
+                    <span class="step active">Draft</span>
+                    <span class="step">Revision</span>
+                    <span class="step">Complete</span>
+                  </div>
+                  <div class="small text-muted">Time remaining: <span class="time-remaining" data-deadline="{{ order.deadline.isoformat() if order.deadline else '' }}">--</span></div>
+                </td>
+                <td class="d-flex flex-column gap-1">
+                  <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-outline-primary btn-sm">Open Details</a>
+                  {% if w %}
+                    <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-outline-secondary btn-sm">Message Writer</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-muted">No orders yet.</div>
+        {% endif %}
+      </div>
+
+      {% if not compact %}
+      <div class="section-card">
+        <h5 class="mb-3">Communication Hub</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="small text-muted mb-2">System Alerts</div>
+            {% if client_order_updates %}
+            <ul class="list-group list-group-flush">
+              {% for n in client_order_updates %}
+              <li class="list-group-item px-0">
+                <div class="small">{{ n.content }}</div>
+                <div class="small text-muted">{{ n.timestamp.strftime('%Y-%m-%d %H:%M') if n.timestamp else '' }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-muted small">No system alerts yet.</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted mb-2">Direct Messages</div>
+            {% if client_direct_messages %}
+            <ul class="list-group list-group-flush">
+              {% for n in client_direct_messages %}
+              <li class="list-group-item px-0">
+                <div class="small">{{ n.content }}</div>
+                <div class="small text-muted">{{ n.timestamp.strftime('%Y-%m-%d %H:%M') if n.timestamp else '' }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-muted small">No direct messages yet.</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap mt-3">
+          <a href="{{ url_for('main.notifications') }}" class="btn btn-outline-secondary btn-sm">Order Notifications</a>
+          <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-primary btn-sm">Contact Admin Support</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+      <div class="section-card mb-3">
+        <h5 class="mb-3">Payment & Billing</h5>
+        <div class="small mb-1">Escrowed: <strong>${{ client_pending_payments|length * 50 }}</strong></div>
+        <div class="small mb-1">Released: <strong>${{ client_payments|length * 30 }}</strong></div>
+        <div class="small mb-2">Refunds: <strong>{{ client_refunds|length }}</strong></div>
+        <button class="btn btn-outline-dark btn-sm w-100 mb-2" disabled>Payment Methods (Card/PayPal/Mobile Money)</button>
+        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Download Invoices (Coming Soon)</button>
+      </div>
+
+      {% if not compact %}
+      <div class="section-card mb-3">
+        <h5 class="mb-3">Profile Management</h5>
+        <div class="small mb-1"><strong>Name:</strong> {{ current_user.name }}</div>
+        <div class="small mb-1"><strong>Email:</strong> {{ current_user.email }}</div>
+        <div class="small mb-1"><strong>Open Tickets:</strong> {{ open_tickets }}</div>
+        <a href="{{ url_for('main.profile') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">Edit Profile</a>
+      </div>
+
+      <div class="section-card mb-3">
+        <h5 class="mb-3">Resources & Extras</h5>
+        <div class="small text-muted mb-2">Recommended samples</div>
+        <div class="d-grid gap-2 mb-3">
+          <a class="btn btn-outline-dark btn-sm" href="{{ url_for('main.Samples') }}?q={{ (client_primary_order.topic if client_primary_order else '')|urlencode }}">Samples for your topic</a>
+          <a class="btn btn-outline-dark btn-sm" href="{{ url_for('main.public_blogs') }}">Blog & Study Resources</a>
+        </div>
+        <div class="referral-card">
+          <div class="fw-semibold">Refer a Friend</div>
+          <div class="small text-muted mb-2">Earn credits for each referred order.</div>
+          <button class="btn btn-primary btn-sm w-100" disabled>Get Referral Link (Coming Soon)</button>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="section-card">
+        <h5 class="mb-3">Settings & Security</h5>
+        <a href="{{ url_for('main.settings') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">Password & Preferences</a>
+        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Enable Two-Factor Authentication (Coming Soon)</button>
+      </div>
+    </div>
+  </div>
+
+  {% if not compact %}
+  <div class="section-card">
+    <button class="btn btn-link p-0 fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#workflowCollapse">
+      How it Works
     </button>
-  <a href="{{ url_for('main.profile') }}" class="btn btn-primary btn-lg">Profile</a>
-  <a href="{{ url_for('main.settings') }}" class="btn btn-primary btn-lg">Setting</a>
-  <a href="{{ url_for('main.my_orders') }}" class="btn btn-primary btn-lg">My Orders</a>
+    <div id="workflowCollapse" class="collapse mt-2">
+      <ol class="mb-0">
+        <li>Client submits order and deposit. Admin verifies and assigns a writer.</li>
+        <li>Writer works on the order, chats with client, and uploads drafts/final work.</li>
+        <li>Client requests revisions or approves completion.</li>
+        <li>For disputes, client raises support ticket; admin mediates and resolves.</li>
+        <li>Admin controls payment release, refunds, quality checks, and writer performance.</li>
+      </ol>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
 
-<div class="row mt-4">
-    <div class="col-md-4">
-    <div class="card shadow-sm border-0">
-    <div class="card-body">
-    <h5 class="card-title">📦 My Orders</h5>
-    <p class="card-text">View or track your orders.</p>
-    <a href="{{ url_for('main.order') }}" class="btn btn-outline-primary btn-sm">View Orders</a>
-    </div>
-  </div>
-</div>
-    
-<div class="col-md-4">
-  <div class="card shadow-sm border-0">
-    <div class="card-body">
-    <h5 class="card-title">📚 Samples</h5>
-    <p class="card-text">Check writing samples shared with you.</p>
-    <a href="{{ url_for('main.Samples') }}" class="btn btn-outline-primary btn-sm">View Samples</a>
-    </div>
-      </div>
-      </div>
-      </ul>
-    </div>
-  </div>
-</nav>
-    <!-- Add more dashboard widgets if needed -->
-  </div>
-</div>
+<script>
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabPanels = document.querySelectorAll(".tab-panel");
+  tabButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabButtons.forEach((b) => b.classList.remove("active"));
+      tabPanels.forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      const panel = document.querySelector(`[data-panel='${btn.dataset.tab}']`);
+      if (panel) panel.classList.add("active");
+    });
+  });
+
+  const marketSearch = document.getElementById("marketSearch");
+  const marketTable = document.getElementById("marketTable");
+  if (marketSearch && marketTable) {
+    marketSearch.addEventListener("input", () => {
+      const q = marketSearch.value.trim().toLowerCase();
+      marketTable.querySelectorAll("tbody tr").forEach((row) => {
+        const topic = row.dataset.topic || "";
+        row.style.display = topic.includes(q) ? "" : "none";
+      });
+    });
+  }
+
+  const activeSearch = document.getElementById("activeSearch");
+  const activeList = document.getElementById("activeList");
+  if (activeSearch && activeList) {
+    activeSearch.addEventListener("input", () => {
+      const q = activeSearch.value.trim().toLowerCase();
+      activeList.querySelectorAll("[data-topic]").forEach((row) => {
+        const topic = row.dataset.topic || "";
+        row.style.display = topic.includes(q) ? "" : "none";
+      });
+    });
+  }
+
+  function updateRemaining() {
+    document.querySelectorAll(".time-remaining").forEach((el) => {
+      const deadline = el.dataset.deadline;
+      if (!deadline) {
+        el.textContent = "N/A";
+        return;
+      }
+      const end = new Date(deadline);
+      const now = new Date();
+      const diff = end - now;
+      if (diff <= 0) {
+        el.textContent = "Past due";
+        return;
+      }
+      const hrs = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      el.textContent = `${hrs}h ${mins}m`;
+    });
+  }
+  updateRemaining();
+  setInterval(updateRemaining, 60000);
+</script>
 {% endblock %}

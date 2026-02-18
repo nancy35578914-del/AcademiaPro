@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-3">Available Jobs</h2>
+  {% if assigned_orders %}
+    <div class="alert alert-success">
+      <strong>Your Active Jobs:</strong>
+      {% for order in assigned_orders %}
+        <a class="btn btn-sm btn-outline-success ms-2" href="{{ url_for('main.order_chat', order_id=order.id) }}">Order #{{ order.id }} Chat</a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if open_orders %}
+    <div class="row g-3">
+      {% for order in open_orders %}
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">{{ order.topic }}</h5>
+            <p class="card-text small text-muted">{{ order.description[:180] }}{% if order.description|length > 180 %}...{% endif %}</p>
+            <p class="mb-2"><strong>Deadline:</strong> {{ order.deadline.strftime('%Y-%m-%d') if order.deadline else 'N/A' }}</p>
+            {% if order.id in applied_order_ids %}
+              <span class="badge bg-secondary">Applied</span>
+            {% else %}
+              <form method="POST" action="{{ url_for('main.apply_job', order_id=order.id) }}">
+                <textarea name="cover_note" class="form-control form-control-sm mb-2" rows="2" placeholder="Why you are a fit (optional)"></textarea>
+                <button class="btn btn-primary btn-sm" type="submit">Apply for Job</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">No open jobs right now.</div>
+  {% endif %}
+</div>
+{% endblock %}

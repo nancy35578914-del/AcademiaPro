@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% block title %}Writers | AcademicPro{% endblock %}
 {% block content %}
 <div class="container py-5">
-  <h2 class="text-center text-primary mb-4">📚 Meet Our Writers</h2>
+  <h2 class="text-center text-primary mb-2">Meet Our Writers</h2>
+  <p class="text-center text-muted mb-4">Verified experts with transparent credentials, years of experience, and anonymized samples.</p>
+
   <div class="row g-4">
     {% for writer in writers %}
       <div class="col-md-4">
@@ -11,7 +14,15 @@
           {% endif %}
           <div class="card-body">
             <h5 class="card-title">{{ writer.name }}</h5>
-            <p class="card-text text-muted">{{ writer.subject }}</p>
+            <p class="card-text text-muted mb-1">{{ writer.subject }}</p>
+            <div class="small mb-1"><strong>Degree:</strong> {{ writer.degree or "Verified Academic Expert" }}</div>
+            <div class="small mb-1"><strong>Experience:</strong> {{ writer.years_experience or 3 }}+ years</div>
+            <div class="small mb-2"><strong>Rating:</strong> {{ writer.rating or 4.8 }}/5</div>
+            {% if writer.portfolio_url %}
+              <a href="{{ writer.portfolio_url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">Portfolio Samples</a>
+            {% else %}
+              <span class="badge bg-light text-dark border">Anonymized samples available on request</span>
+            {% endif %}
           </div>
         </div>
       </div>

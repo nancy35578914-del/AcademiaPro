@@ -1,23 +1,26 @@
 {% extends "base.html" %}
+{% block title %}Profile | AcademicPro{% endblock %}
 {% block content %}
-<div class="container py-5">
-  <h2 class="text-primary fw-bold mb-4">👤 Edit Your Profile</h2>
-  <form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-      {{ form.name.label }} {{ form.name(class="form-control") }}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h1 class="h4 mb-3">Edit Profile</h1>
+        <form method="POST" enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+          <div class="mb-3">{{ form.name.label(class='form-label') }} {{ form.name(class="form-control") }}</div>
+          <div class="mb-3">{{ form.email.label(class='form-label') }} {{ form.email(class="form-control") }}</div>
+          <div class="mb-3">{{ form.photo.label(class='form-label') }} {{ form.photo(class="form-control") }}</div>
+          {% if current_user.is_authenticated %}
+            <div class="mb-3">{{ form.writer_portfolio.label(class='form-label') }} {{ form.writer_portfolio(class="form-control") }}</div>
+            <div class="mb-3">{{ form.writer_resume.label(class='form-label') }} {{ form.writer_resume(class="form-control") }}</div>
+          {% endif %}
+          <div class="mb-3">{{ form.password.label(class='form-label') }} {{ form.password(class="form-control") }}</div>
+          <div class="mb-3">{{ form.confirm_password.label(class='form-label') }} {{ form.confirm_password(class="form-control") }}</div>
+          <button class="btn btn-primary" type="submit">{{ form.submit.label.text }}</button>
+        </form>
+      </div>
     </div>
-    <div class="mb-3">
-      {{ form.email.label }} {{ form.email(class="form-control") }}
-    </div>
-    <div class="mb-3">
-      {{ form.password.label }} {{ form.password(class="form-control") }}
-    </div>
-    <div class="mb-3">
-      {{ form.confirm_password.label }} {{ form.confirm_password(class="form-control") }}
-    </div>
-    <button class="btn btn-primary">{{ form.submit.label }}</button>
-  </form>
+  </div>
 </div>
 {% endblock %}
- 

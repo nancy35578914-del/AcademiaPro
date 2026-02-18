@@ -2,18 +2,65 @@
 {% block content %}
 <h2 class="mb-3">Manage Writing Samples</h2>
 
-<form method="POST" class="mb-4">
-  <input name="title" class="form-control mb-2" placeholder="Sample Title" required>
-  <input name="category" class="form-control mb-2" placeholder="Category (e.g., Essay, Report)" required>
-  <textarea name="content" class="form-control mb-2" placeholder="Sample Content" rows="6" required></textarea>
-  <button class="btn btn-success">Add Sample</button>
+<form method="POST" class="mb-4" enctype="multipart/form-data">
+  <div class="row g-2">
+    <div class="col-md-6">
+      <input name="title" class="form-control" placeholder="Sample Title" required>
+    </div>
+    <div class="col-md-6">
+      <input name="category" class="form-control" placeholder="Category (e.g., Sample Paper, Template)" required>
+    </div>
+    <div class="col-md-4">
+      <input name="style" class="form-control" placeholder="Style (APA, MLA, Chicago)">
+    </div>
+    <div class="col-md-4">
+      <input name="level" class="form-control" placeholder="Level (Undergrad, Masters, PhD)">
+    </div>
+    <div class="col-md-4">
+      <input name="subject" class="form-control" placeholder="Subject (Business, Humanities, Science)">
+    </div>
+    <div class="col-md-4">
+      <input name="grade" class="form-control" placeholder="Grade/Mark (optional)">
+    </div>
+    <div class="col-md-4">
+      <input type="date" name="published_at" class="form-control" placeholder="Published Date">
+    </div>
+    <div class="col-md-4">
+      <input name="source_url" class="form-control" placeholder="Source URL (optional)">
+    </div>
+    <div class="col-12">
+      <textarea name="content" class="form-control" placeholder="Short summary or description" rows="4" required></textarea>
+    </div>
+    <div class="col-md-6">
+      <input type="file" name="file" class="form-control">
+      <small class="text-muted">Accepted: PDF, DOC, DOCX.</small>
+    </div>
+    <div class="col-md-6 d-grid">
+      <button class="btn btn-success">Add Sample</button>
+    </div>
+  </div>
 </form>
 
 <ul class="list-group">
   {% for sample in samples %}
     <li class="list-group-item">
-      <strong>{{ sample.title }}</strong> - <em>{{ sample.category }}</em><br>
-      {{ sample.content[:100] }}...
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <strong>{{ sample.title }}</strong> - <em>{{ sample.category }}</em><br>
+          <small class="text-muted">
+            {{ sample.style or "Style N/A" }} · {{ sample.level or "Level N/A" }} · {{ sample.subject or "Subject N/A" }}
+          </small>
+          <div>{{ sample.content[:120] }}{% if sample.content|length > 120 %}...{% endif %}</div>
+        </div>
+        <div class="text-end">
+          {% if sample.file_name %}
+            <a class="btn btn-sm btn-outline-primary mb-1" href="{{ url_for('static', filename='uploads/samples/' ~ sample.file_name) }}" target="_blank">Download</a>
+          {% elif sample.source_url %}
+            <a class="btn btn-sm btn-outline-primary mb-1" href="{{ sample.source_url }}" target="_blank">Source</a>
+          {% endif %}
+          <a class="btn btn-sm btn-outline-danger" href="{{ url_for('main.delete_samples', id=sample.id) }}">Delete</a>
+        </div>
+      </div>
     </li>
   {% endfor %}
 </ul>

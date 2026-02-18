@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% block title %}Order Details | AcademicPro{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 980px;">
+  <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+    <div>
+      <h2 class="mb-1">Order #{{ order.id }} Details</h2>
+      <p class="text-muted mb-0">{{ order.topic }}</p>
+    </div>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-7">
+      <div class="section-card h-100">
+        <h5 class="mb-3">Instructions</h5>
+        <div class="small mb-1"><strong>Topic:</strong> {{ order.topic }}</div>
+        <div class="small mb-1"><strong>Deadline:</strong> {{ order.deadline.strftime('%Y-%m-%d') if order.deadline else 'N/A' }}</div>
+        <div class="small mb-1"><strong>Length:</strong> {{ order.word_count }} words</div>
+        <div class="small mb-1"><strong>Academic Level:</strong> {{ order.level }}</div>
+        <div class="small mb-1"><strong>Formatting Style:</strong> As provided in order details</div>
+        <div class="small mt-2"><strong>Description:</strong> {{ order.description }}</div>
+        <hr>
+        <div class="small fw-semibold mb-2">Client Checklist</div>
+        <div class="small text-muted mb-1"><input type="checkbox"> Rubric / grading criteria attached</div>
+        <div class="small text-muted mb-1"><input type="checkbox"> Required sources or readings included</div>
+        <div class="small text-muted mb-1"><input type="checkbox"> Preferred citation style confirmed</div>
+        <div class="small text-muted mb-1"><input type="checkbox"> Examples or prior drafts uploaded</div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="section-card mb-3">
+        <h5 class="mb-3">Writer Profile</h5>
+        {% if writer_user %}
+          <div class="small mb-1"><strong>Name:</strong> {{ writer_user.name }}</div>
+          <div class="small mb-1"><strong>Rating:</strong> {{ writer_profile.rating if writer_profile and writer_profile.rating else 'New' }}</div>
+          <div class="small mb-1"><strong>Expertise:</strong> {{ writer_profile.subject if writer_profile else 'General Academic' }}</div>
+          <div class="small mb-1"><strong>Degree:</strong> {{ writer_profile.degree if writer_profile and writer_profile.degree else 'Not listed' }}</div>
+          <div class="small mb-2"><strong>Experience:</strong> {{ writer_profile.years_experience if writer_profile and writer_profile.years_experience else 'N/A' }} years</div>
+          {% if writer_profile and writer_profile.portfolio_url %}
+            <a class="btn btn-outline-primary btn-sm" href="{{ writer_profile.portfolio_url }}" target="_blank">View Past Work</a>
+          {% endif %}
+          {% if writer_profile and writer_profile.portfolio_file %}
+            <a class="btn btn-outline-secondary btn-sm mt-2" href="{{ url_for('static', filename='uploads/' ~ writer_profile.portfolio_file) }}" target="_blank">View Portfolio</a>
+          {% endif %}
+          {% if writer_profile and writer_profile.resume_file %}
+            <a class="btn btn-outline-secondary btn-sm mt-2" href="{{ url_for('static', filename='uploads/' ~ writer_profile.resume_file) }}" target="_blank">View Resume</a>
+          {% endif %}
+        {% else %}
+          <div class="text-muted small">Writer not assigned yet.</div>
+        {% endif %}
+      </div>
+      <div class="section-card">
+        <h5 class="mb-3">Progress Tracker</h5>
+        <div class="progress mb-2" style="height: 10px;">
+          <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress_percent }}%;" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="small text-muted mb-2">{{ progress_percent }}% complete</div>
+        <ul class="list-unstyled mb-0">
+          {% for step in milestones %}
+            <li class="small d-flex align-items-center gap-2 mb-1">
+              <span class="dot {% if step.done %}dot-done{% else %}dot-todo{% endif %}"></span>
+              <span class="{% if step.done %}text-success{% else %}text-muted{% endif %}">{{ loop.index }}. {{ step.label }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card mb-3">
+        <div class="card-body" style="max-height: 420px; overflow-y: auto;">
+          <h5 class="mb-3">Client ↔ Writer Thread</h5>
+          {% if not chat_active %}
+            <div class="alert alert-warning small">
+              Client-writer chat is inactive. You can view history, but new messages are disabled. Use admin support for follow-ups.
+            </div>
+          {% endif %}
+          {% if not approved_app %}
+            <div class="alert alert-info small">
+              Writer not assigned yet. This thread will activate once a writer is approved.
+            </div>
+          {% endif %}
+          {% for msg in messages %}
+          <div class="mb-2 {% if msg.sender_id == current_user.id %}text-end{% endif %}">
+            <span class="badge {% if msg.sender_id == current_user.id %}bg-primary{% else %}bg-secondary{% endif %} p-2">
+              {{ msg.content.replace('[Order #' ~ order.id ~ '] ', '') }}
+            </span>
+            <div class="small text-muted">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp else '' }}</div>
+          </div>
+          {% else %}
+          <p class="text-muted">No messages yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if chat_active %}
+      <form method="POST" enctype="multipart/form-data" class="section-card" id="orderChatForm">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Send Update</h6>
+          <select class="form-select form-select-sm w-auto" id="cannedResponses">
+            <option value="">Canned responses</option>
+            <option value="Got it, starting now.">Got it, starting now.</option>
+            <option value="Draft in progress. I will update you soon.">Draft in progress. I will update you soon.</option>
+            <option value="Outline ready for your approval.">Outline ready for your approval.</option>
+            <option value="Revised draft uploaded. Please review.">Revised draft uploaded. Please review.</option>
+            <option value="Final deliverable uploaded.">Final deliverable uploaded.</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Comment on file (optional)</label>
+          <select class="form-select" id="fileCommentTarget">
+            <option value="">No file selected</option>
+            {% for f in order_files %}
+              <option value="{{ f.filename }}">{{ f.filename }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <input name="message" class="form-control" placeholder="Type a message for writer/client/admin">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Upload reference/draft file</label>
+          <input name="file" type="file" class="form-control">
+        </div>
+        <button class="btn btn-primary btn-sm" type="submit">Send / Upload</button>
+      </form>
+      {% else %}
+      <div class="section-card">
+        <h6 class="mb-2">Chat Disabled</h6>
+        <div class="small text-muted mb-2">This order is closed. Contact admin for follow-up questions.</div>
+        <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-primary btn-sm">Contact Admin Support</a>
+      </div>
+      {% endif %}
+
+      {% if chat_active and approved_app and current_user.id == approved_app.writer_user_id %}
+      <div class="section-card mt-3">
+        <h6 class="mb-2">Writer Tools</h6>
+        <div class="mb-2 small text-muted">One-click status updates</div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button type="button" class="btn btn-outline-primary btn-sm status-btn" data-message="Reviewing instructions now.">Reviewing instructions</button>
+          <button type="button" class="btn btn-outline-primary btn-sm status-btn" data-message="Researching sources and outlining key points.">Researching</button>
+          <button type="button" class="btn btn-outline-primary btn-sm status-btn" data-message="Draft in progress. Next update soon.">Drafting</button>
+          <button type="button" class="btn btn-outline-primary btn-sm status-btn" data-message="Running plagiarism and AI checks before submission.">Final checks</button>
+        </div>
+
+        <div class="mb-2 small text-muted">Request clarifications</div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button type="button" class="btn btn-outline-secondary btn-sm status-btn" data-message="Please confirm the citation style and reference format.">Citation style</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm status-btn" data-message="Could you clarify the expected word count or page length?">Word count</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm status-btn" data-message="Do you have a rubric or grading criteria for this task?">Rubric</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm status-btn" data-message="Please share any required sources or materials.">Required sources</button>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="small fw-semibold mb-2">Self-Editing Checklist</div>
+            <div class="small text-muted mb-1"><input type="checkbox"> Thesis/claim is clear and focused</div>
+            <div class="small text-muted mb-1"><input type="checkbox"> Sources are credible and cited</div>
+            <div class="small text-muted mb-1"><input type="checkbox"> Grammar and spelling checked</div>
+            <div class="small text-muted mb-1"><input type="checkbox"> Formatting follows required style</div>
+            <div class="small text-muted mb-1"><input type="checkbox"> Plagiarism/AI check completed</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small fw-semibold mb-2">Time Tracker</div>
+            <div class="timer-box mb-2">
+              <div class="timer-display" id="writerTimer">00:00:00</div>
+              <div class="d-flex gap-2 mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="timerStart">Start</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="timerPause">Pause</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="timerReset">Reset</button>
+              </div>
+            </div>
+            <div class="small fw-semibold mb-2">Quality Tools</div>
+            <div class="small text-muted">Plagiarism and AI detection are recommended before submission.</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-5">
+      <div class="section-card">
+        <h5 class="mb-3">Files</h5>
+        {% if file_groups %}
+          {% for group_name, items in file_groups %}
+            <div class="small text-muted fw-semibold mt-2 mb-1">{{ group_name }}</div>
+            <ul class="list-group list-group-flush mb-2">
+              {% for item in items %}
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small">{{ item.file.filename }} {% if item.version %}<span class="badge bg-light text-dark">{{ item.version }}</span>{% endif %}</div>
+                    <div class="small text-muted">By {{ item.file.uploader }} | {{ item.file.uploaded_at.strftime('%Y-%m-%d %H:%M') if item.file.uploaded_at else '' }}</div>
+                  </div>
+                  <a href="{{ url_for('main.download_order_file', filename=item.file.filename) }}" class="btn btn-outline-primary btn-sm">Download</a>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted small">No files uploaded yet.</div>
+        {% endif %}
+      </div>
+
+      <div class="section-card mt-3">
+        <h5 class="mb-3">Admin Support Chat</h5>
+        <div class="admin-chat-box mb-3">
+          {% if admin_messages %}
+            {% for msg in admin_messages %}
+              <div class="mb-2 {% if msg.sender_id == current_user.id %}text-end{% endif %}">
+                <span class="badge {% if msg.sender_id == current_user.id %}bg-dark{% else %}bg-info{% endif %} p-2">
+                  {{ msg.content.replace('[Admin Chat #' ~ order.id ~ '] ', '') }}
+                </span>
+                <div class="small text-muted">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp else '' }}</div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-muted small">No admin messages yet.</div>
+          {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('main.order_admin_message', order_id=order.id) }}">
+          <div class="input-group">
+            <input name="admin_message" class="form-control" placeholder="Message admin...">
+            <button class="btn btn-outline-primary" type="submit">Send</button>
+          </div>
+        </form>
+      </div>
+
+      {% if existing_review is not none %}
+        <div class="section-card mt-3">
+          <h5 class="mb-2">Your Review</h5>
+          <div class="small text-muted">Rating: {{ existing_review.rating }}/5</div>
+          {% if existing_review.comment %}
+            <div class="small mt-2">{{ existing_review.comment }}</div>
+          {% endif %}
+        </div>
+      {% elif writer_user and (order.status or '').lower() == 'completed' and current_user.id == order.user_id %}
+        <div class="section-card mt-3">
+          <h5 class="mb-2">Leave a Rating</h5>
+          <form method="POST" action="{{ url_for('main.submit_order_review', order_id=order.id) }}">
+            <div class="mb-2">
+              <label class="form-label small">Rating (1-5)</label>
+              <select name="rating" class="form-select">
+                <option value="">Select rating</option>
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Fair</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Bad</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Comment (optional)</label>
+              <textarea name="comment" class="form-control" rows="3" placeholder="Share your experience"></textarea>
+            </div>
+            <button class="btn btn-primary btn-sm" type="submit">Submit Review</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  const canned = document.getElementById("cannedResponses");
+  const fileTarget = document.getElementById("fileCommentTarget");
+  const messageInput = document.querySelector("input[name='message']");
+  const statusBtns = document.querySelectorAll(".status-btn");
+  const form = document.getElementById("orderChatForm");
+  if (canned && messageInput) {
+    canned.addEventListener("change", () => {
+      if (canned.value) {
+        messageInput.value = canned.value;
+      }
+    });
+  }
+  if (fileTarget && messageInput) {
+    fileTarget.addEventListener("change", () => {
+      if (fileTarget.value) {
+        const prefix = `[File: ${fileTarget.value}] `;
+        if (!messageInput.value.startsWith(prefix)) {
+          messageInput.value = prefix + messageInput.value;
+        }
+      }
+    });
+  }
+  if (statusBtns && messageInput && form) {
+    statusBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const msg = btn.getAttribute("data-message") || "";
+        if (msg) {
+          messageInput.value = msg;
+          form.submit();
+        }
+      });
+    });
+  }
+
+  const timerDisplay = document.getElementById("writerTimer");
+  const timerStart = document.getElementById("timerStart");
+  const timerPause = document.getElementById("timerPause");
+  const timerReset = document.getElementById("timerReset");
+  let timerSeconds = 0;
+  let timerHandle = null;
+  function renderTimer() {
+    if (!timerDisplay) return;
+    const hrs = String(Math.floor(timerSeconds / 3600)).padStart(2, "0");
+    const mins = String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, "0");
+    const secs = String(timerSeconds % 60).padStart(2, "0");
+    timerDisplay.textContent = `${hrs}:${mins}:${secs}`;
+  }
+  if (timerStart) {
+    timerStart.addEventListener("click", () => {
+      if (timerHandle) return;
+      timerHandle = setInterval(() => {
+        timerSeconds += 1;
+        renderTimer();
+      }, 1000);
+    });
+  }
+  if (timerPause) {
+    timerPause.addEventListener("click", () => {
+      if (timerHandle) {
+        clearInterval(timerHandle);
+        timerHandle = null;
+      }
+    });
+  }
+  if (timerReset) {
+    timerReset.addEventListener("click", () => {
+      timerSeconds = 0;
+      renderTimer();
+    });
+  }
+  renderTimer();
+</script>
+{% endblock %}

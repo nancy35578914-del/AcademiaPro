@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Support Tickets | AcademicPro{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Support Tickets</h1>
+
+<div class="section-card mb-4">
+  <h2 class="h6 mb-3">Raise an Issue</h2>
+  <form method="POST" class="row g-2">
+    <div class="col-md-6">
+      <label class="form-label">Subject</label>
+      <input name="subject" class="form-control" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Order (optional)</label>
+      <select name="order_id" class="form-select">
+        <option value="">General Support</option>
+        {% for o in my_order_choices %}
+        <option value="{{ o.id }}">#{{ o.id }} - {{ o.topic }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Priority</label>
+      <select name="priority" class="form-select">
+        <option value="normal">Normal</option>
+        <option value="high">High</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Message</label>
+      <textarea name="message" rows="4" class="form-control" required></textarea>
+    </div>
+    <div class="col-12">
+      <button class="btn btn-primary">Submit Ticket</button>
+    </div>
+  </form>
+</div>
+
+<div class="section-card">
+  <h2 class="h6 mb-3">Your Ticket History</h2>
+  {% if tickets %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th><th>Admin Note</th><th>Created</th></tr></thead>
+      <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td>#{{ t.id }}</td>
+        <td>{{ t.subject }}</td>
+        <td>{{ t.priority }}</td>
+        <td>{{ t.status }}</td>
+        <td>{{ t.admin_note or 'Pending review' }}</td>
+        <td>{{ t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else '' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted">No tickets yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

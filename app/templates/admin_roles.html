@@ -1,0 +1,17 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Role-Based Access Control (RBAC)</h1>
+<div class="admin-card p-3">
+  <p class="text-muted">Sub-admin role matrix scaffold. Expand this table as you onboard operations staff.</p>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>Role</th><th>Scope</th><th>Assigned Users</th></tr></thead>
+      <tbody>
+      {% for r in roles %}
+      <tr><td>{{ r.name }}</td><td>{{ r.scope }}</td><td>{{ r.users }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

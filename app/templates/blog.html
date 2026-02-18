@@ -1,44 +1,85 @@
 {% extends "base.html" %}
+{% block title %}Blog & Resources | AcademicPro{% endblock %}
 {% block content %}
-
-<form method="get" class="mb-4">
-  <input type="text" name="q" value="{{ query }}" placeholder="Search blogs..." class="form-control" />
-</form>
-
 <div class="container py-5">
-  <h2 class="mb-4 text-center fw-bold text-primary">📝 Latest Blog Posts</h2>
+  <h2 class="mb-2 text-center fw-bold text-primary">Academic Resource Hub</h2>
+  <p class="text-center text-muted mb-4">Practical, student‑friendly guides with actionable steps. Browse by pillar and dive into focused cluster topics.</p>
 
-  {% if blogs %}
+  <div class="section-card mb-4">
+    <h5 class="mb-2">Pillar Guides</h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="writer-card h-100">
+          <h6>The Ultimate Guide to Mastering Grade 12 Exams</h6>
+          <p class="small text-muted mb-2">Time management, revision systems, and exam strategy.</p>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.public_blogs') }}?q=grade 12">Explore pillar</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="writer-card h-100">
+          <h6>How to Write a Thesis Without Burnout</h6>
+          <p class="small text-muted mb-2">Planning, momentum, and sustainable writing habits.</p>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.public_blogs') }}?q=thesis">Explore pillar</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="writer-card h-100">
+          <h6>APA vs. MLA vs. Chicago</h6>
+          <p class="small text-muted mb-2">When to use each style and how to format correctly.</p>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.public_blogs') }}?q=citation">Explore pillar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card mb-4">
+    <h5 class="mb-2">Cluster Topics</h5>
+    <div class="row g-3">
+      <div class="col-md-4"><div class="tile-soft h-100"><strong>8 Common Calculus Mistakes</strong><p class="small text-muted mb-0">Avoid the errors that cost easy marks.</p></div></div>
+      <div class="col-md-4"><div class="tile-soft h-100"><strong>Time Management for Exam Season</strong><p class="small text-muted mb-0">Build a schedule that actually holds.</p></div></div>
+      <div class="col-md-4"><div class="tile-soft h-100"><strong>How to Choose the Right Tutor</strong><p class="small text-muted mb-0">Questions to ask before you hire.</p></div></div>
+    </div>
+  </div>
+
+  <form method="get" class="mb-4">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search resources..." class="form-control" />
+  </form>
+
+  {% if blogs and blogs.items %}
     <div class="row g-4">
-      {% for blog in blogs %}
+      {% for blog in blogs.items %}
         <div class="col-md-6 col-lg-4">
           <div class="card shadow-sm h-100 border-0">
             <div class="card-body d-flex flex-column">
               <h5 class="card-title text-dark">{{ blog.title }}</h5>
-              <p class="card-text text-muted small">
-                <i class="bi bi-calendar"></i> {{ blog.created_at.strftime('%b %d, %Y') }}
-              </p>
-              <p class="card-text flex-grow-1">{{ blog.content[:200] }}...</p>
+              <p class="card-text text-muted small">{{ blog.created_at.strftime('%b %d, %Y') }}</p>
+              <p class="card-text flex-grow-1">{{ blog.content[:220] }}{% if blog.content|length > 220 %}...{% endif %}</p>
               <div class="mt-2 text-end">
                 <a href="{{ url_for('main.blog_detail', id=blog.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
               </div>
             </div>
           </div>
         </div>
-        <div class="mt-3 text-center">
-  {% if blogs.has_prev %}
-    <a href="{{ url_for('main.blog_list', page=blogs.prev_num, q=query) }}" class="btn btn-sm btn-outline-primary">Prev</a>
-  {% endif %}
-  <span class="mx-2">Page {{ blogs.page }} of {{ blogs.pages }}</span>
-  {% if blogs.has_next %}
-    <a href="{{ url_for('main.blog_list', page=blogs.next_num, q=query) }}" class="btn btn-sm btn-outline-primary">Next</a>
-  {% endif %}
-</div>
       {% endfor %}
+    </div>
+
+    <div class="mt-3 text-center">
+      {% if blogs.has_prev %}
+        <a href="{{ url_for('main.blog_list', page=blogs.prev_num, q=query) }}" class="btn btn-sm btn-outline-primary">Prev</a>
+      {% endif %}
+      <span class="mx-2">Page {{ blogs.page }} of {{ blogs.pages }}</span>
+      {% if blogs.has_next %}
+        <a href="{{ url_for('main.blog_list', page=blogs.next_num, q=query) }}" class="btn btn-sm btn-outline-primary">Next</a>
+      {% endif %}
     </div>
   {% else %}
     <p class="text-muted text-center">No blog posts available yet.</p>
   {% endif %}
-</div>
 
+  <div class="cta-band text-center py-4 mt-4">
+    <h3 class="h5 fw-bold mb-2">Need help right now?</h3>
+    <p class="mb-3">Talk to a writer and get a plan for your assignment today.</p>
+    <a href="{{ url_for('main.order') }}" class="btn btn-warning btn-sm fw-semibold">Talk to a Writer</a>
+  </div>
+</div>
 {% endblock %}

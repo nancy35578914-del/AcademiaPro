@@ -1,0 +1,19 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Marketing & SEO</h1>
+<div class="row g-3">
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Blog Posts</div><div class="stat-value">{{ blog_count }}</div></div></div>
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Samples</div><div class="stat-value">{{ sample_count }}</div></div></div>
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Leads</div><div class="stat-value">{{ lead_count }}</div></div></div>
+  <div class="col-md-3"><div class="admin-card p-3"><div class="text-muted">Lead->Order Conversion</div><div class="stat-value">{{ conversion }}%</div></div></div>
+</div>
+<div class="admin-card p-3 mt-3">
+  <h2 class="h6">Growth Actions</h2>
+  <ul>
+    <li>Optimize blog metadata for high-intent queries.</li>
+    <li>Publish subject-specific sample pages weekly.</li>
+    <li>Add campaign tags to lead sources for attribution.</li>
+    <li>Create discount code support in order checkout flow (next phase).</li>
+  </ul>
+</div>
+{% endblock %}

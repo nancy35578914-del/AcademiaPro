@@ -1,0 +1,25 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Dispute Resolution Center</h1>
+<div class="admin-card p-3">
+  <p class="text-muted">Orders below are flagged as potential disputes because they are overdue and still open/in progress.</p>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>Order</th><th>Client</th><th>Status</th><th>Deadline</th><th>Action</th></tr></thead>
+      <tbody>
+      {% for d in disputes %}
+      <tr>
+        <td>#{{ d.id }} - {{ d.topic }}</td>
+        <td>{{ d.user.name if d.user else 'Unknown' }}</td>
+        <td><span class="badge bg-warning text-dark">{{ d.status }}</span></td>
+        <td>{{ d.deadline.strftime('%Y-%m-%d') if d.deadline else '' }}</td>
+        <td><a href="{{ url_for('main.order_chat', order_id=d.id) }}" class="btn btn-sm btn-outline-primary">Review Evidence Chat</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted">No active disputes right now.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

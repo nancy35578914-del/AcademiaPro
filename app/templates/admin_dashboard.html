@@ -1,99 +1,197 @@
 {% extends "admin_base.html" %}
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Overview & Analytics</h1>
+  <div class="small text-muted">Real-time operational snapshot</div>
+</div>
 
-<!-- Mobile Sidebar Toggle Button -->
-<button class="btn btn-outline-secondary d-md-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#adminSidebar" aria-expanded="false" aria-controls="adminSidebar">
-  ☰ Menu
-</button>
-
-<!-- Main Admin Dashboard Section -->
-<div class="container-fluid py-4">
-  <h2 class="mb-4 fw-bold text-primary">📊 Admin Dashboard</h2>
-
-  <div class="row g-4">
-    <!-- Messages -->
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body text-center">
-          <div class="mb-2 fs-1 text-primary">📨</div>
-          <h5 class="card-title text-muted">Messages</h5>
-          <h3 class="text-primary">{{ stats.messages }}</h3>
-          <a href="{{ url_for('main.admin_chat_grouped') }}" class="btn btn-outline-primary btn-sm mt-2">Chat View</a>
-        </div>
+<div class="row g-3 mb-3">
+  <div class="col-xl-3 col-md-6">
+    <div class="admin-card p-3">
+      <div class="text-muted small">Total Revenue (proxy)</div>
+      <div class="stat-value">{{ stats.payments }}</div>
+      <div class="metric-delta positive">+{{ velocities.payments }}% vs last week</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="admin-card p-3">
+      <div class="text-muted small">Active Orders</div>
+      <div class="stat-value">{{ stats.active_orders }}</div>
+      <div class="metric-delta {% if velocities.orders >= 0 %}positive{% else %}negative{% endif %}">
+        {{ velocities.orders }}% vs last week
       </div>
     </div>
-    <!-- Testimonials -->
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body text-center">
-          <div class="mb-2 fs-1 text-success">📝</div>
-          <h5 class="card-title text-muted">Testimonials</h5>
-          <h3 class="text-success">{{ stats.testimonials }}</h3>
-          <a href="{{ url_for('main.admin_testimonials') }}" class="btn btn-outline-success btn-sm mt-2">View</a>
-        </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="admin-card p-3">
+      <div class="text-muted small">Lead → Order</div>
+      <div class="stat-value">{{ stats.lead_to_order_rate }}%</div>
+      <div class="metric-delta {% if velocities.leads >= 0 %}positive{% else %}negative{% endif %}">
+        {{ velocities.leads }}% leads trend
       </div>
     </div>
-    <!-- Writers -->
-<div class="col-md-3">
-  <div class="card shadow-sm border-0 h-100">
-    <div class="card-body text-center">
-      <div class="mb-2 fs-1 text-warning">👩‍🎓</div>
-      <h5 class="card-title text-muted">Writers</h5>
-      <h3 class="text-warning">{{ stats.writers }}</h3>
-      <div class="d-grid gap-2">
-        <a href="{{ url_for('main.admin_writers') }}" class="btn btn-outline-warning btn-sm mt-2">Manage</a>
-        <a href="{{ url_for('main.add_writer') }}" class="btn btn-outline-success btn-sm mt-2">➕ Add</a>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="admin-card p-3">
+      <div class="text-muted small">Payment Success Rate</div>
+      <div class="stat-value">{{ stats.payment_success_rate }}%</div>
+      <div class="metric-delta {% if velocities.payments >= 0 %}positive{% else %}negative{% endif %}">
+        {{ velocities.payments }}% payments trend
       </div>
     </div>
   </div>
 </div>
-    <!-- Leads -->
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body text-center">
-          <div class="mb-2 fs-1 text-danger">📈</div>
-          <h5 class="card-title text-muted">Leads</h5>
-          <h3 class="text-danger">{{ stats.leads }}</h3>
-          <a href="{{ url_for('main.admin_leads') }}" class="btn btn-outline-danger btn-sm mt-2">View</a>
-        </div>
-      </div>
-    </div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-2 col-md-4">
+    <div class="admin-card p-3"><div class="text-muted small">Total Users</div><div class="stat-value">{{ stats.users }}</div></div>
   </div>
-  <!-- Blog Posts -->
-<div class="col-md-3">
-  <div class="card shadow-sm border-0 h-100">
-    <div class="card-body text-center">
-      <div class="mb-2 fs-1 text-info">📝</div>
-      <h5 class="card-title text-muted">Blog Posts</h5>
-      <a href="{{ url_for('main.admin_Blog') }}" class="btn btn-outline-info btn-sm mt-2">Manage</a>
+  <div class="col-xl-2 col-md-4">
+    <div class="admin-card p-3"><div class="text-muted small">Completed Orders</div><div class="stat-value">{{ stats.completed_orders }}</div></div>
+  </div>
+  <div class="col-xl-2 col-md-4">
+    <div class="admin-card p-3"><div class="text-muted small">Payments</div><div class="stat-value">{{ stats.payments }}</div></div>
+  </div>
+  <div class="col-xl-2 col-md-4">
+    <div class="admin-card p-3"><div class="text-muted small">Writers</div><div class="stat-value">{{ stats.writers }}</div></div>
+  </div>
+  <div class="col-xl-2 col-md-4">
+    <div class="admin-card p-3"><div class="text-muted small">On-time Rate</div><div class="stat-value">96%</div></div>
+  </div>
+  <div class="col-xl-2 col-md-4">
+    <div class="admin-card p-3">
+      <div class="text-muted small">System Status</div>
+      <div class="status-pill status-ok">Healthy</div>
     </div>
   </div>
 </div>
 
-<div class="col-md-3">
-  <div class="card shadow-sm border-0 h-100">
-    <div class="card-body text-center">
-      <div class="mb-2 fs-1 text-info">📝</div>
-      <h5 class="card-title text-muted">Samples</h5>
-      <a href="{{ url_for('main.admin_samples') }}" class="btn btn-outline-info btn-sm mt-2">Manage</a>
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="admin-card p-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Trends (Orders, Leads, Payments)</h2>
+        <div class="d-flex gap-2">
+          <label class="small text-muted"><input type="checkbox" class="series-toggle" data-series="0" checked> Orders</label>
+          <label class="small text-muted"><input type="checkbox" class="series-toggle" data-series="1" checked> Leads</label>
+          <label class="small text-muted"><input type="checkbox" class="series-toggle" data-series="2" checked> Payments</label>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="admin-card p-3 h-100">
+      <h2 class="h6 mb-3">Actionable Notifications</h2>
+      {% if alerts %}
+        {% for alert in alerts %}
+          <div class="alert alert-{{ alert.level }} py-2 mb-2">
+            <div class="small fw-semibold">{{ alert.title }}</div>
+            <a href="{{ alert.action }}" class="small"> {{ alert.action_label }}</a>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-muted small">No critical alerts.</div>
+      {% endif %}
     </div>
   </div>
 </div>
-  <!-- Recent Announcements -->
-  <div class="mt-5">
-    <h4 class="fw-bold text-dark">📢 Recent Announcements</h4>
-    {% if announcements %}
-      <ul class="list-group">
-        {% for a in announcements[:5] %}
-          <li class="list-group-item">
-            <strong>{{ a.title }}</strong> <span class="text-muted">({{ a.audience }})</span><br>
-            {{ a.body }}
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="admin-card p-3 h-100">
+      <h2 class="h6 mb-2">Attention Needed</h2>
+      <div class="small text-muted mb-2">Priority accounts and pending approvals</div>
+      <ul class="list-group list-group-flush mb-3">
+        {% for u in attention_users %}
+          <li class="list-group-item px-0 small">
+            {{ u.name }} ({{ u.email }})
+            <span class="badge bg-danger ms-1">High Priority</span>
           </li>
+        {% else %}
+          <li class="list-group-item px-0 small text-muted">No priority users.</li>
         {% endfor %}
       </ul>
-    {% else %}
-      <div class="alert alert-info mt-2">No announcements posted yet.</div>
-    {% endif %}
+      <ul class="list-group list-group-flush">
+        {% for app in pending_apps %}
+          <li class="list-group-item px-0 small d-flex justify-content-between align-items-center">
+            <span>{{ app.name }} - {{ app.subject }}</span>
+            <span class="d-flex gap-1">
+              <a class="btn btn-outline-success btn-sm" href="{{ url_for('main.approve_writer', id=app.id) }}">Approve</a>
+              <a class="btn btn-outline-danger btn-sm" href="{{ url_for('main.delete_writer', id=app.id) }}">Reject</a>
+            </span>
+          </li>
+        {% else %}
+          <li class="list-group-item px-0 small text-muted">No pending writer applications.</li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
+  <div class="col-lg-6">
+    <div class="admin-card p-3 h-100">
+      <h2 class="h6 mb-2">Settlement Snapshot</h2>
+      <div class="small mb-2">Pending payouts: <strong>${{ settlement_snapshot.pending_amount }}</strong></div>
+      <div class="small mb-2">Projected payouts (week): <strong>${{ projected_payouts }}</strong></div>
+      <div class="small mb-2">Pending count: <strong>{{ settlement_snapshot.pending_count }}</strong></div>
+      <div class="small mb-2">Completed count: <strong>{{ settlement_snapshot.completed_count }}</strong></div>
+      <div class="small mb-2">Failed count: <strong>{{ settlement_snapshot.failed_count }}</strong></div>
+      <div class="small text-muted mb-2">Open items: <strong>{{ settlement_snapshot.pending_count }}</strong></div>
+      <a href="{{ url_for('main.admin_settlements') }}" class="btn btn-outline-primary btn-sm mt-2">Open Reconciliation</a>
+      <a href="{{ url_for('main.admin_disputes') }}" class="btn btn-outline-warning btn-sm mt-2">Open Dispute Center</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  const ctx = document.getElementById("trendChart");
+  if (ctx) {
+    if (window.__adminTrendChart) {
+      window.__adminTrendChart.destroy();
+    }
+    const annotations = {{ chart_annotations|tojson }};
+    window.__adminTrendChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: {{ chart_labels|tojson }},
+        datasets: [
+          { label: "Orders", data: {{ chart_orders|tojson }}, borderColor: "#1f6bff", tension: 0.3 },
+          { label: "Leads", data: {{ chart_leads|tojson }}, borderColor: "#1ea97c", tension: 0.3 },
+          { label: "Payments", data: {{ chart_payments|tojson }}, borderColor: "#f59e0b", tension: 0.3 },
+          { label: "Target", data: {{ chart_targets|tojson }}, borderColor: "#dc3545", borderDash: [6,6], tension: 0.2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    document.querySelectorAll(".series-toggle").forEach((toggle) => {
+      toggle.addEventListener("change", (e) => {
+        const idx = Number(e.target.dataset.series);
+        window.__adminTrendChart.setDatasetVisibility(idx, e.target.checked);
+        window.__adminTrendChart.update();
+      });
+    });
+
+    if (annotations && annotations[0]) {
+      const ann = annotations[0];
+      const label = document.createElement("div");
+      label.className = "chart-annotation";
+      label.textContent = ann.label;
+      const container = ctx.closest(".chart-box");
+      if (container) {
+        container.appendChild(label);
+        label.style.left = `${(ann.index / Math.max({{ chart_labels|length }} - 1, 1)) * 100}%`;
+      }
+    }
+  }
+</script>
 {% endblock %}

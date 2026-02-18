@@ -1,0 +1,40 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Support Tickets</h1>
+<div class="admin-card p-3">
+  {% if tickets %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>ID</th><th>User</th><th>Order</th><th>Subject</th><th>Priority</th><th>Status</th><th>Message</th><th>Action</th></tr></thead>
+      <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td>#{{ t.id }}</td>
+        <td>{{ ticket_users.get(t.user_id).name if ticket_users.get(t.user_id) else ('User #' ~ t.user_id) }}</td>
+        <td>{% if t.order_id %}#{{ t.order_id }}{% else %}-{% endif %}</td>
+        <td>{{ t.subject }}</td>
+        <td>{{ t.priority }}</td>
+        <td>{{ t.status }}</td>
+        <td class="small">{{ t.message }}</td>
+        <td>
+          <form method="POST" class="d-grid gap-2">
+            <input type="hidden" name="ticket_id" value="{{ t.id }}">
+            <select name="status" class="form-select form-select-sm">
+              {% for s in ['open', 'in_progress', 'resolved', 'closed'] %}
+              <option value="{{ s }}" {% if t.status == s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+            <textarea name="admin_note" class="form-control form-control-sm" rows="2" placeholder="Admin resolution note">{{ t.admin_note or '' }}</textarea>
+            <button class="btn btn-sm btn-primary" type="submit">Update</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted">No support tickets yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

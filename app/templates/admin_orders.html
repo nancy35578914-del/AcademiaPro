@@ -1,38 +1,96 @@
 {% extends "admin_base.html" %}
 {% block content %}
-<h2>Received Orders</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Orders & Job Applications</h1>
+</div>
 
-<table class="table table-bordered">
-  <thead class="table-light">
-    <tr>
-      <th>ID</th>
-      <th>Client</th>
-      <th>Email</th>
-      <th>Subject</th>
-      <th>Instructions</th>
-      <th>Submitted</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for order in orders %}
-    <tr>
-      <td>{{ order.id }}</td>
-      <td>{{ order.client_name }}</td>
-      <td>{{ order.email }}</td>
-      <td>{{ order.subject }}</td>
-      <td>{{ order.instructions[:100] }}...</td>
-      <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-    </tr>
-    <td>
-  <a href="{{ url_for('main.delete_order', id=order.id) }}"
-     class="btn btn-sm btn-danger"
-     onclick="return confirm('Delete this order?')">Delete</a>
-</td>
-<form method="GET" class="mb-3 d-flex">
-  <input type="text" name="q" class="form-control me-2" placeholder="Search by name or subject">
-  <button class="btn btn-outline-primary">Search</button>
-</form>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="admin-card p-3 mb-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Global Search</label>
+      <input type="text" name="q" class="form-control" placeholder="Topic, description, client" value="{{ q }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        <option value="">All</option>
+        {% for s in ['Pending Review', 'Open', 'In Progress', 'Revision Requested', 'Completed', 'Cancelled'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Date From</label><input type="date" name="date_from" class="form-control" value="{{ date_from }}"></div>
+    <div class="col-md-2"><label class="form-label">Date To</label><input type="date" name="date_to" class="form-control" value="{{ date_to }}"></div>
+    <div class="col-md-2 d-flex gap-2">
+      <button class="btn btn-primary w-100">Filter</button>
+      <a href="{{ url_for('main.admin_orders') }}" class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="admin-card p-3">
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>ID</th><th>Topic</th><th>Client</th><th>Status</th><th>Deadline</th><th>Price</th><th>Applications</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for order in orders %}
+        <tr>
+          <td>#{{ order.id }}</td>
+          <td>
+            <div class="fw-semibold">{{ order.topic }}</div>
+            <div class="small text-muted">{{ order.description[:120] }}{% if order.description|length > 120 %}...{% endif %}</div>
+          </td>
+          <td>{{ order.user.name if order.user else 'Unknown' }}</td>
+          <td><span class="tag-soft">{{ order.status }}</span></td>
+          <td>{{ order.deadline.strftime('%Y-%m-%d') if order.deadline else 'N/A' }}</td>
+          <td>${{ order.price or 0 }}</td>
+          <td>
+            {% set apps = applications_by_order.get(order.id, []) %}
+            {% if apps %}
+              {% for app in apps %}
+              <div class="border rounded p-2 mb-2">
+                <div class="d-flex justify-content-between">
+                  <strong>{{ writer_users.get(app.writer_user_id).name if writer_users.get(app.writer_user_id) else ('User #' ~ app.writer_user_id) }}</strong>
+                  <span class="badge bg-secondary">{{ app.status }}</span>
+                </div>
+                <div class="small text-muted">{{ app.cover_note or 'No pitch provided.' }}</div>
+                {% if app.status == 'pending' %}
+                <form method="POST" action="{{ url_for('main.approve_job_application', application_id=app.id) }}" class="mt-2">
+                  <button class="btn btn-sm btn-success">Approve Writer</button>
+                </form>
+                {% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted small">No applications</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('main.update_order', id=order.id) }}" class="mb-2">
+              <select name="status" class="form-select form-select-sm mb-2">
+                {% for s in ['Pending Review', 'Open', 'In Progress', 'Revision Requested', 'Completed', 'Cancelled'] %}
+                <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn btn-sm btn-primary w-100">Update</button>
+            </form>
+            {% if not order.job_posted %}
+            <form method="POST" action="{{ url_for('main.publish_order_job', id=order.id) }}" class="mb-2">
+              <button class="btn btn-sm btn-success w-100" type="submit">Publish to Writers</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('main.delete_order', id=order.id) }}" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Delete this order?')">Delete</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="text-center text-muted">No matching orders found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

@@ -1,15 +1,84 @@
 {% extends "base.html" %}
 {% block content %}
-  <h2>Apply to Become a Writer</h2>
-  <form method="POST">
+<div class="container py-4" style="max-width: 760px;">
+  <h2 class="mb-2">Apply to Become a Writer</h2>
+  <p class="text-muted">Step 1: Personal Info · Step 2: Professional Expertise</p>
+
+  {% if existing %}
+    <div class="alert {% if existing.approved %}alert-success{% else %}alert-info{% endif %}">
+      Application status: <strong>{% if existing.approved %}Approved{% else %}Pending{% endif %}</strong>
+    </div>
+  {% endif %}
+
+  <form method="POST" class="card p-3 shadow-sm" enctype="multipart/form-data" id="writerApplyForm">
     {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.email.label }}{{ form.email(class="form-control") }}</div>
-    <div<!-- filepath: c:\Users\k\Desktop\New_website\app\templates\writer_apply.html -->
-{% extends "base.html" %}
-{% block content %}
-  <h2>Apply to Become a Writer</h2>
-  <form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.email.label }}{{ form.email(class="form
+
+    <div id="stepOne">
+      <div class="mb-3">{{ form.name.label }} {{ form.name(class="form-control py-2", placeholder="Full name") }}</div>
+      <div class="mb-3">{{ form.email.label }} {{ form.email(class="form-control py-2", readonly=true) }}</div>
+      <div class="mb-3">{{ form.education_level.label }} {{ form.education_level(class="form-select") }}</div>
+      <div class="mb-3">{{ form.years_experience.label }} {{ form.years_experience(class="form-control", placeholder="e.g., 3") }}</div>
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-primary btn-sm" type="button" id="nextStep">Next</button>
+      </div>
+    </div>
+
+    <div id="stepTwo" class="d-none">
+      <div class="mb-3">{{ form.subject.label }} {{ form.subject(class="form-control", placeholder="e.g., Nursing, Business Law, Python Programming") }}</div>
+      <div class="mb-3">
+        <label class="form-label">Writing Style Mastery</label>
+        <div class="d-flex flex-wrap gap-3">
+          {% for value, label in form.writing_styles.choices %}
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" name="{{ form.writing_styles.name }}" value="{{ value }}" {% if form.writing_styles.data and value in form.writing_styles.data %}checked{% endif %}>
+              <span class="form-check-label">{{ label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mb-3">{{ form.portfolio.label }} {{ form.portfolio(class="form-control") }}</div>
+      <div class="mb-2">{{ form.bio.label }} {{ form.bio(class="form-control", rows="5", maxlength="500", placeholder="Briefly describe your experience, specialties, and writing process.") }}</div>
+      <div class="small text-muted mb-3"><span id="bioCount">0</span>/500 characters</div>
+      <div class="mb-3 form-check">
+        {{ form.accept_terms(class="form-check-input", id="writerTerms") }}
+        <label class="form-check-label small" for="writerTerms">
+          I agree to the <a href="{{ url_for('main.terms') }}">Terms</a> and <a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a>.
+        </label>
+        {% if form.accept_terms.errors %}
+          <div class="text-danger small mt-1">{{ form.accept_terms.errors[0] }}</div>
+        {% endif %}
+      </div>
+      <div class="d-flex justify-content-between">
+        <button class="btn btn-outline-secondary btn-sm" type="button" id="prevStep">Back</button>
+        <button class="btn btn-primary btn-sm" type="submit">Submit Application</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  const nextBtn = document.getElementById("nextStep");
+  const prevBtn = document.getElementById("prevStep");
+  const stepOne = document.getElementById("stepOne");
+  const stepTwo = document.getElementById("stepTwo");
+  if (nextBtn && stepOne && stepTwo) {
+    nextBtn.addEventListener("click", () => {
+      stepOne.classList.add("d-none");
+      stepTwo.classList.remove("d-none");
+    });
+  }
+  if (prevBtn && stepOne && stepTwo) {
+    prevBtn.addEventListener("click", () => {
+      stepTwo.classList.add("d-none");
+      stepOne.classList.remove("d-none");
+    });
+  }
+  const bioInput = document.getElementById("bio");
+  const bioCount = document.getElementById("bioCount");
+  if (bioInput && bioCount) {
+    const updateCount = () => { bioCount.textContent = bioInput.value.length; };
+    bioInput.addEventListener("input", updateCount);
+    updateCount();
+  }
+</script>
+{% endblock %}
