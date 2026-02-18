@@ -71,7 +71,7 @@ def create_app():
                 db.session.commit()
             if "email_verified" not in user_columns:
                 try:
-                    db.session.execute(text("ALTER TABLE user ADD COLUMN email_verified BOOLEAN DEFAULT 0 NOT NULL"))
+                    db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN email_verified BOOLEAN DEFAULT FALSE NOT NULL"))
                     db.session.commit()
                 except Exception:
                     db.session.rollback()
@@ -188,7 +188,7 @@ def create_app():
                 ("cluster_topic", "ALTER TABLE blog_post ADD COLUMN cluster_topic VARCHAR(120)"),
                 ("author_id", "ALTER TABLE blog_post ADD COLUMN author_id INTEGER"),
                 ("author_name", "ALTER TABLE blog_post ADD COLUMN author_name VARCHAR(120)"),
-                ("is_published", "ALTER TABLE blog_post ADD COLUMN is_published BOOLEAN DEFAULT 1 NOT NULL"),
+                ("is_published", "ALTER TABLE blog_post ADD COLUMN is_published BOOLEAN DEFAULT TRUE NOT NULL"),
                 ("updated_at", "ALTER TABLE blog_post ADD COLUMN updated_at DATETIME"),
             ]
             for col_name, sql in blog_additions:
@@ -222,7 +222,7 @@ def create_app():
                     "email VARCHAR(120) NOT NULL, "
                     "purpose VARCHAR(40) NOT NULL, "
                     "code VARCHAR(8) NOT NULL, "
-                    "is_used BOOLEAN DEFAULT 0 NOT NULL, "
+                    "is_used BOOLEAN DEFAULT FALSE NOT NULL, "
                     "expires_at DATETIME NOT NULL, "
                     "created_at DATETIME NOT NULL, "
                     "FOREIGN KEY(user_id) REFERENCES user(id))"

@@ -35,7 +35,7 @@ def upgrade():
         if "author_name" not in cols:
             op.add_column("blog_post", sa.Column("author_name", sa.String(length=120), nullable=True))
         if "is_published" not in cols:
-            op.add_column("blog_post", sa.Column("is_published", sa.Boolean(), nullable=False, server_default=sa.text("1")))
+            op.add_column("blog_post", sa.Column("is_published", sa.Boolean(), nullable=False, server_default=sa.true()))
         if "updated_at" not in cols:
             op.add_column("blog_post", sa.Column("updated_at", sa.DateTime(), nullable=True))
 

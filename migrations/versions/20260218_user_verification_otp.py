@@ -23,7 +23,7 @@ def upgrade():
     if "user" in inspector.get_table_names():
       cols = {c["name"] for c in inspector.get_columns("user")}
       if "email_verified" not in cols:
-          op.add_column("user", sa.Column("email_verified", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+          op.add_column("user", sa.Column("email_verified", sa.Boolean(), nullable=False, server_default=sa.false()))
 
     if "otp_code" not in inspector.get_table_names():
         op.create_table(
@@ -33,7 +33,7 @@ def upgrade():
             sa.Column("email", sa.String(length=120), nullable=False),
             sa.Column("purpose", sa.String(length=40), nullable=False),
             sa.Column("code", sa.String(length=8), nullable=False),
-            sa.Column("is_used", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+            sa.Column("is_used", sa.Boolean(), nullable=False, server_default=sa.false()),
             sa.Column("expires_at", sa.DateTime(), nullable=False),
             sa.Column("created_at", sa.DateTime(), nullable=False),
             sa.ForeignKeyConstraint(["user_id"], ["user.id"]),

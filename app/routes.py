@@ -126,8 +126,13 @@ def _issue_otp(email, purpose, user_id=None, minutes=10):
         expires_at=expires_at,
         is_used=False,
     )
-    db.session.add(otp)
-    db.session.commit()
+    try:
+        db.session.add(otp)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("OTP persistence failed.")
+        return None
 
     msg = MailMessage(
         subject=f"AcademicPro Security Code ({purpose.replace('_', ' ').title()})",
@@ -380,10 +385,15 @@ def register():
             db.session.rollback()
             flash("An account with that email already exists. Please log in.", "warning")
             return redirect(url_for("main.login"))
-        _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
-        session["pending_signup_user_id"] = user.id
-        flash("Account created. Enter the OTP sent to your email to verify your account.", "info")
-        return redirect(url_for('main.verify_email'))
+        otp = _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
+        if otp:
+            session["pending_signup_user_id"] = user.id
+            flash("Account created. Enter the OTP sent to your email to verify your account.", "info")
+            return redirect(url_for('main.verify_email'))
+        user.email_verified = True
+        db.session.commit()
+        flash("Account created successfully. Email verification is temporarily unavailable.", "warning")
+        return redirect(url_for('main.login'))
     return render_template('register.html', form=form)
 
 
@@ -402,8 +412,11 @@ def verify_email():
     if request.method == "POST":
         action = (request.form.get("action") or "verify").strip()
         if action == "resend":
-            _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
-            flash("A new OTP has been sent to your email.", "info")
+            otp = _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
+            if otp:
+                flash("A new OTP has been sent to your email.", "info")
+            else:
+                flash("Unable to send OTP right now. Please try again later.", "warning")
             return redirect(url_for("main.verify_email"))
         code = (request.form.get("code") or "").strip()
         if not code:
@@ -911,7 +924,10 @@ def export_user_data():
 @main.route("/settings/request-delete", methods=["POST"])
 @login_required
 def request_delete_account():
-    _issue_otp(email=current_user.email, purpose="delete_account", user_id=current_user.id, minutes=10)
+    otp = _issue_otp(email=current_user.email, purpose="delete_account", user_id=current_user.id, minutes=10)
+    if not otp:
+        flash("Unable to issue deletion OTP now. Please try again later.", "warning")
+        return redirect(url_for("main.settings"))
     session["pending_delete_user_id"] = current_user.id
     flash("OTP sent. Enter code to confirm account deletion request.", "warning")
     return redirect(url_for("main.verify_delete_account"))
@@ -927,8 +943,11 @@ def verify_password_change():
     if request.method == "POST":
         action = (request.form.get("action") or "verify").strip()
         if action == "resend":
-            _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
-            flash("A new OTP has been sent.", "info")
+            otp = _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
+            if otp:
+                flash("A new OTP has been sent.", "info")
+            else:
+                flash("Unable to send OTP right now.", "warning")
             return redirect(url_for("main.verify_password_change"))
         code = (request.form.get("code") or "").strip()
         if _verify_otp(current_user.email, "password_change", code):
@@ -951,8 +970,11 @@ def verify_delete_account():
     if request.method == "POST":
         action = (request.form.get("action") or "verify").strip()
         if action == "resend":
-            _issue_otp(email=current_user.email, purpose="delete_account", user_id=current_user.id, minutes=10)
-            flash("A new OTP has been sent.", "info")
+            otp = _issue_otp(email=current_user.email, purpose="delete_account", user_id=current_user.id, minutes=10)
+            if otp:
+                flash("A new OTP has been sent.", "info")
+            else:
+                flash("Unable to send OTP right now.", "warning")
             return redirect(url_for("main.verify_delete_account"))
         code = (request.form.get("code") or "").strip()
         if _verify_otp(current_user.email, "delete_account", code):
