@@ -8,6 +8,7 @@ import os
 import re
 import uuid
 import random
+import threading
 
 from app.extensions import db, login_manager
 from app.forms import OrderForm, RegistrationForm, LoginForm, ProfileForm, SettingForm, ApplicationForm
@@ -105,12 +106,17 @@ def _get_primary_admin():
 
 
 def _send_mail_safely(message):
-    try:
-        mail.send(message)
-        return True
-    except Exception:
-        current_app.logger.exception("Mail send failed.")
-        return False
+    app_obj = current_app._get_current_object()
+
+    def _send():
+        with app_obj.app_context():
+            try:
+                mail.send(message)
+            except Exception:
+                app_obj.logger.exception("Mail send failed.")
+
+    threading.Thread(target=_send, daemon=True).start()
+    return True
 
 
 def _generate_otp_code():
@@ -145,9 +151,7 @@ def _issue_otp(email, purpose, user_id=None, minutes=10):
             "If you did not request this, ignore this email."
         ),
     )
-    sent = _send_mail_safely(msg)
-    if not sent:
-        return None
+    _send_mail_safely(msg)
     return otp
 
 
