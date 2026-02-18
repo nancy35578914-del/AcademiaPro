@@ -8,7 +8,9 @@ import os
 import re
 import uuid
 import random
-import threading
+import json
+import urllib.request
+import urllib.error
 
 from app.extensions import db, login_manager
 from app.forms import OrderForm, RegistrationForm, LoginForm, ProfileForm, SettingForm, ApplicationForm
@@ -106,17 +108,49 @@ def _get_primary_admin():
 
 
 def _send_mail_safely(message):
-    app_obj = current_app._get_current_object()
+    resend_api_key = (current_app.config.get("RESEND_API_KEY") or "").strip()
+    resend_from = (current_app.config.get("RESEND_FROM_EMAIL") or current_app.config.get("MAIL_DEFAULT_SENDER") or "").strip()
+    recipients = getattr(message, "recipients", None) or []
+    to_email = recipients[0] if recipients else None
+    if resend_api_key and resend_from and to_email:
+        payload = {
+            "from": resend_from,
+            "to": [to_email],
+            "subject": message.subject,
+            "text": message.body or "",
+        }
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw = resp.read().decode("utf-8") if resp else "{}"
+                data = json.loads(raw or "{}")
+                message_id = data.get("id")
+                current_app.logger.info("Resend email delivered", extra={"resend_message_id": message_id, "to": to_email})
+                return True
+        except urllib.error.HTTPError as err:
+            error_body = err.read().decode("utf-8", errors="ignore") if err else ""
+            current_app.logger.error("Resend API HTTP error: %s %s", getattr(err, "code", "unknown"), error_body)
+            return False
+        except Exception:
+            current_app.logger.exception("Resend API send failed.")
+            return False
 
-    def _send():
-        with app_obj.app_context():
-            try:
-                mail.send(message)
-            except Exception:
-                app_obj.logger.exception("Mail send failed.")
-
-    threading.Thread(target=_send, daemon=True).start()
-    return True
+    # SMTP fallback only when Resend is not configured.
+    try:
+        mail.send(message)
+        current_app.logger.info("SMTP email delivered", extra={"to": to_email})
+        return True
+    except Exception:
+        current_app.logger.exception("SMTP mail send failed.")
+        return False
 
 
 def _generate_otp_code():
@@ -151,7 +185,14 @@ def _issue_otp(email, purpose, user_id=None, minutes=10):
             "If you did not request this, ignore this email."
         ),
     )
-    _send_mail_safely(msg)
+    sent = _send_mail_safely(msg)
+    if not sent:
+        try:
+            db.session.delete(otp)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return None
     return otp
 
 
@@ -394,14 +435,12 @@ def register():
             flash("An account with that email already exists. Please log in.", "warning")
             return redirect(url_for("main.login"))
         otp = _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
+        session["pending_signup_user_id"] = user.id
         if otp:
-            session["pending_signup_user_id"] = user.id
             flash("Account created. Enter the OTP sent to your email to verify your account.", "info")
-            return redirect(url_for('main.verify_email'))
-        user.email_verified = True
-        db.session.commit()
-        flash("Account created successfully. Email verification is temporarily unavailable.", "warning")
-        return redirect(url_for('main.login'))
+        else:
+            flash("Account created, but OTP delivery failed. Click Resend OTP after checking email settings.", "warning")
+        return redirect(url_for('main.verify_email'))
     return render_template('register.html', form=form)
 
 
@@ -838,8 +877,13 @@ def profile():
             return render_template("profile.html", form=form)
         if pending_password_hash:
             session["pending_password_hash"] = pending_password_hash
-            _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
-            flash("Profile updated. Verify OTP sent to your email to complete password change.", "info")
+            otp = _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
+            if otp:
+                flash("Profile updated. Verify OTP sent to your email to complete password change.", "info")
+            else:
+                session.pop("pending_password_hash", None)
+                flash("Profile updated, but OTP delivery failed. Password was not changed.", "warning")
+                return redirect(url_for("main.profile"))
             return redirect(url_for("main.verify_password_change"))
         flash("Profile updated.", "success")
         return redirect(url_for("main.profile"))
@@ -896,8 +940,13 @@ def settings():
             return render_template("settings.html", form=form)
         if pending_password_hash:
             session["pending_password_hash"] = pending_password_hash
-            _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
-            flash("Settings saved. Verify OTP sent to your email to complete password change.", "info")
+            otp = _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
+            if otp:
+                flash("Settings saved. Verify OTP sent to your email to complete password change.", "info")
+            else:
+                session.pop("pending_password_hash", None)
+                flash("Settings saved, but OTP delivery failed. Password was not changed.", "warning")
+                return redirect(url_for("main.settings"))
             return redirect(url_for("main.verify_password_change"))
         flash("Settings saved.", "success")
         return redirect(url_for("main.settings"))

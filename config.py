@@ -14,6 +14,8 @@ class Config:
     ]
     ADMIN_BOOTSTRAP_EMAIL = os.environ.get("ADMIN_BOOTSTRAP_EMAIL", "").strip().lower()
     ADMIN_BOOTSTRAP_PASSWORD = os.environ.get("ADMIN_BOOTSTRAP_PASSWORD", "")
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+    RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "").strip()
 
 LOGIN_MESSAGE = "You must log in to access this page."
 LOGIN_MESSAGE_CATEGORY = "warning"
