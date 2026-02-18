@@ -3,46 +3,64 @@
 {% block content %}
 <div class="container py-5">
   <h2 class="mb-2 text-center fw-bold text-primary">Academic Resource Hub</h2>
-  <p class="text-center text-muted mb-4">Practical, student‑friendly guides with actionable steps. Browse by pillar and dive into focused cluster topics.</p>
+  <p class="text-center text-muted mb-4">Practical, student-friendly guides with actionable steps. Browse by pillar and dive into focused cluster topics.</p>
 
   <div class="section-card mb-4">
     <h5 class="mb-2">Pillar Guides</h5>
     <div class="row g-3">
+      {% for p in pillars[:6] %}
       <div class="col-md-4">
         <div class="writer-card h-100">
-          <h6>The Ultimate Guide to Mastering Grade 12 Exams</h6>
-          <p class="small text-muted mb-2">Time management, revision systems, and exam strategy.</p>
-          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.public_blogs') }}?q=grade 12">Explore pillar</a>
+          <h6>{{ p }}</h6>
+          <p class="small text-muted mb-2">In-depth foundational guide with practical steps and examples.</p>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.blog_list', pillar=p) }}">Explore pillar</a>
         </div>
       </div>
-      <div class="col-md-4">
-        <div class="writer-card h-100">
-          <h6>How to Write a Thesis Without Burnout</h6>
-          <p class="small text-muted mb-2">Planning, momentum, and sustainable writing habits.</p>
-          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.public_blogs') }}?q=thesis">Explore pillar</a>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="writer-card h-100">
-          <h6>APA vs. MLA vs. Chicago</h6>
-          <p class="small text-muted mb-2">When to use each style and how to format correctly.</p>
-          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.public_blogs') }}?q=citation">Explore pillar</a>
-        </div>
-      </div>
+      {% else %}
+      <div class="col-12"><div class="tile-soft text-muted">No pillar guides published yet.</div></div>
+      {% endfor %}
     </div>
   </div>
 
   <div class="section-card mb-4">
     <h5 class="mb-2">Cluster Topics</h5>
     <div class="row g-3">
-      <div class="col-md-4"><div class="tile-soft h-100"><strong>8 Common Calculus Mistakes</strong><p class="small text-muted mb-0">Avoid the errors that cost easy marks.</p></div></div>
-      <div class="col-md-4"><div class="tile-soft h-100"><strong>Time Management for Exam Season</strong><p class="small text-muted mb-0">Build a schedule that actually holds.</p></div></div>
-      <div class="col-md-4"><div class="tile-soft h-100"><strong>How to Choose the Right Tutor</strong><p class="small text-muted mb-0">Questions to ask before you hire.</p></div></div>
+      {% for c in clusters[:9] %}
+      <div class="col-md-4">
+        <a class="tile-soft h-100 d-block" href="{{ url_for('main.blog_list', cluster=c) }}">
+          <strong>{{ c }}</strong>
+          <p class="small text-muted mb-0">Focused deep-dive topic with actionable recommendations.</p>
+        </a>
+      </div>
+      {% else %}
+      <div class="col-12"><div class="tile-soft text-muted">No cluster topics published yet.</div></div>
+      {% endfor %}
     </div>
   </div>
 
-  <form method="get" class="mb-4">
-    <input type="text" name="q" value="{{ query }}" placeholder="Search resources..." class="form-control" />
+  <form method="get" class="mb-4 row g-2">
+    <div class="col-md-4">
+      <input type="text" name="q" value="{{ query }}" placeholder="Search resources..." class="form-control" />
+    </div>
+    <div class="col-md-3">
+      <select name="category" class="form-select">
+        <option value="">All categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="pillar" class="form-select">
+        <option value="">All pillars</option>
+        {% for p in pillars %}
+          <option value="{{ p }}" {% if selected_pillar == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-primary w-100" type="submit">Filter</button>
+    </div>
   </form>
 
   {% if blogs and blogs.items %}
@@ -53,7 +71,13 @@
             <div class="card-body d-flex flex-column">
               <h5 class="card-title text-dark">{{ blog.title }}</h5>
               <p class="card-text text-muted small">{{ blog.created_at.strftime('%b %d, %Y') }}</p>
-              <p class="card-text flex-grow-1">{{ blog.content[:220] }}{% if blog.content|length > 220 %}...{% endif %}</p>
+              <div class="small mb-2 d-flex flex-wrap gap-1">
+                <span class="badge bg-light text-dark border">{{ blog.category }}</span>
+                {% if blog.pillar %}<span class="badge bg-light text-dark border">{{ blog.pillar }}</span>{% endif %}
+                {% if blog.cluster_topic %}<span class="badge bg-light text-dark border">{{ blog.cluster_topic }}</span>{% endif %}
+              </div>
+              <p class="card-text flex-grow-1">{{ blog.excerpt or (blog.content[:220] ~ ('...' if blog.content|length > 220 else '')) }}</p>
+              <p class="small text-muted mb-0">By {{ blog.author_name or "AcademicPro Team" }}</p>
               <div class="mt-2 text-end">
                 <a href="{{ url_for('main.blog_detail', id=blog.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
               </div>
@@ -65,11 +89,11 @@
 
     <div class="mt-3 text-center">
       {% if blogs.has_prev %}
-        <a href="{{ url_for('main.blog_list', page=blogs.prev_num, q=query) }}" class="btn btn-sm btn-outline-primary">Prev</a>
+        <a href="{{ url_for('main.blog_list', page=blogs.prev_num, q=query, category=selected_category, pillar=selected_pillar, cluster=selected_cluster) }}" class="btn btn-sm btn-outline-primary">Prev</a>
       {% endif %}
       <span class="mx-2">Page {{ blogs.page }} of {{ blogs.pages }}</span>
       {% if blogs.has_next %}
-        <a href="{{ url_for('main.blog_list', page=blogs.next_num, q=query) }}" class="btn btn-sm btn-outline-primary">Next</a>
+        <a href="{{ url_for('main.blog_list', page=blogs.next_num, q=query, category=selected_category, pillar=selected_pillar, cluster=selected_cluster) }}" class="btn btn-sm btn-outline-primary">Next</a>
       {% endif %}
     </div>
   {% else %}

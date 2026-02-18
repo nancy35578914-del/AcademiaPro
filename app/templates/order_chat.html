@@ -71,7 +71,7 @@
   <div class="row g-3">
     <div class="col-lg-7">
       <div class="card mb-3">
-        <div class="card-body" style="max-height: 420px; overflow-y: auto;">
+        <div id="orderThreadBox" class="card-body" style="max-height: 420px; overflow-y: auto;">
           <h5 class="mb-3">Client ↔ Writer Thread</h5>
           {% if not chat_active %}
             <div class="alert alert-warning small">
@@ -206,7 +206,7 @@
 
       <div class="section-card mt-3">
         <h5 class="mb-3">Admin Support Chat</h5>
-        <div class="admin-chat-box mb-3">
+        <div id="orderAdminThreadBox" class="admin-chat-box mb-3">
           {% if admin_messages %}
             {% for msg in admin_messages %}
               <div class="mb-2 {% if msg.sender_id == current_user.id %}text-end{% endif %}">
@@ -335,5 +335,66 @@
     });
   }
   renderTimer();
+
+  const orderThreadBox = document.getElementById("orderThreadBox");
+  const orderAdminThreadBox = document.getElementById("orderAdminThreadBox");
+  function esc(v) {
+    return String(v || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  async function refreshOrderThread() {
+    if (!orderThreadBox) return;
+    try {
+      const res = await fetch("{{ url_for('main.order_chat_messages', order_id=order.id) }}", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return;
+      let html = '<h5 class="mb-3">Client ↔ Writer Thread</h5>';
+      if (!data.chat_active) {
+        html += '<div class="alert alert-warning small">Client-writer chat is inactive. You can view history, but new messages are disabled. Use admin support for follow-ups.</div>';
+      }
+      const rows = data.messages || [];
+      if (!rows.length) {
+        html += '<p class="text-muted">No messages yet.</p>';
+      } else {
+        html += rows.map((m) => {
+          const align = m.mine ? "text-end" : "";
+          const cls = m.mine ? "bg-primary" : "bg-secondary";
+          return `<div class="mb-2 ${align}"><span class="badge ${cls} p-2">${esc(m.content)}</span><div class="small text-muted">${esc(m.timestamp)}</div></div>`;
+        }).join("");
+      }
+      orderThreadBox.innerHTML = html;
+      orderThreadBox.scrollTop = orderThreadBox.scrollHeight;
+    } catch (_e) {}
+  }
+
+  async function refreshOrderAdminThread() {
+    if (!orderAdminThreadBox) return;
+    try {
+      const res = await fetch("{{ url_for('main.order_admin_messages', order_id=order.id) }}", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return;
+      const rows = data.messages || [];
+      if (!rows.length) {
+        orderAdminThreadBox.innerHTML = '<div class="text-muted small">No admin messages yet.</div>';
+        return;
+      }
+      orderAdminThreadBox.innerHTML = rows.map((m) => {
+        const align = m.mine ? "text-end" : "";
+        const cls = m.mine ? "bg-dark" : "bg-info";
+        return `<div class="mb-2 ${align}"><span class="badge ${cls} p-2">${esc(m.content)}</span><div class="small text-muted">${esc(m.timestamp)}</div></div>`;
+      }).join("");
+      orderAdminThreadBox.scrollTop = orderAdminThreadBox.scrollHeight;
+    } catch (_e) {}
+  }
+
+  refreshOrderThread();
+  refreshOrderAdminThread();
+  setInterval(refreshOrderThread, 5000);
+  setInterval(refreshOrderAdminThread, 5000);
 </script>
 {% endblock %}

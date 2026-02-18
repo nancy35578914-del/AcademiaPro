@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, abort, send_from_directory
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, abort, send_from_directory, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -6,12 +6,15 @@ from datetime import datetime, timedelta
 from functools import wraps
 import os
 import re
+import uuid
+import random
 
 from app.extensions import db, login_manager
 from app.forms import OrderForm, RegistrationForm, LoginForm, ProfileForm, SettingForm, ApplicationForm
 from app.models import (
     BlogPost, Sample, User, Testimonial, Lead, Writer, SiteReview, ChatMessage, Message,
-    Announcement, Order, OrderFile, Application, JobApplication, Payment, SiteSetting, SupportTicket, OrderReview, calculate_price
+    Announcement, Order, OrderFile, Application, JobApplication, Payment, SiteSetting, SupportTicket, OrderReview,
+    AIConversationMessage, OTPCode, calculate_price
 )
 from flask_mail import Message as MailMessage
 from app import mail
@@ -19,6 +22,50 @@ from sqlalchemy.exc import IntegrityError
 
 main = Blueprint("main", __name__)
 JOB_TAKEN_ANNOUNCEMENT_TTL_HOURS = 12
+GUEST_THREAD_TAG = "[GUEST_THREAD:"
+SUPPORT_CHAT_TAG = "[Support]"
+AI_THREAD_TAG = "ai_guest_thread_id"
+
+
+def _get_guest_thread_id():
+    thread_id = session.get("guest_thread_id")
+    if not thread_id:
+        thread_id = uuid.uuid4().hex[:16]
+        session["guest_thread_id"] = thread_id
+    return thread_id
+
+
+def _get_ai_guest_thread_id():
+    thread_id = session.get(AI_THREAD_TAG)
+    if not thread_id:
+        thread_id = uuid.uuid4().hex[:20]
+        session[AI_THREAD_TAG] = thread_id
+    return thread_id
+
+
+def _guest_thread_prefix(thread_id):
+    return f"{GUEST_THREAD_TAG}{thread_id}]"
+
+
+def _extract_guest_thread_id(content):
+    match = re.search(r"\[GUEST_THREAD:([a-f0-9]{8,32})\]", content or "", re.IGNORECASE)
+    if match:
+        return match.group(1).lower()
+    return None
+
+
+def _strip_tag(content, tag_pattern):
+    return re.sub(tag_pattern, "", content or "").strip()
+
+
+def _order_access_context(order):
+    approved_app = JobApplication.query.filter_by(order_id=order.id, status="approved").first()
+    allowed_ids = {order.user_id}
+    if approved_app:
+        allowed_ids.add(approved_app.writer_user_id)
+    if current_user.is_admin:
+        allowed_ids.add(current_user.id)
+    return approved_app, allowed_ids
 
 
 def _cleanup_taken_job_announcements():
@@ -64,6 +111,53 @@ def _send_mail_safely(message):
         current_app.logger.exception("Mail send failed.")
 
 
+def _generate_otp_code():
+    return f"{random.randint(0, 999999):06d}"
+
+
+def _issue_otp(email, purpose, user_id=None, minutes=10):
+    code = _generate_otp_code()
+    expires_at = datetime.utcnow() + timedelta(minutes=minutes)
+    otp = OTPCode(
+        user_id=user_id,
+        email=(email or "").strip().lower(),
+        purpose=purpose,
+        code=code,
+        expires_at=expires_at,
+        is_used=False,
+    )
+    db.session.add(otp)
+    db.session.commit()
+
+    msg = MailMessage(
+        subject=f"AcademicPro Security Code ({purpose.replace('_', ' ').title()})",
+        recipients=[email],
+        body=(
+            f"Your AcademicPro verification code is: {code}\n\n"
+            f"This code expires in {minutes} minutes.\n"
+            "If you did not request this, ignore this email."
+        ),
+    )
+    _send_mail_safely(msg)
+    return otp
+
+
+def _verify_otp(email, purpose, code):
+    row = OTPCode.query.filter_by(
+        email=(email or "").strip().lower(),
+        purpose=purpose,
+        code=(code or "").strip(),
+        is_used=False,
+    ).order_by(OTPCode.created_at.desc()).first()
+    if not row:
+        return False
+    if row.expires_at < datetime.utcnow():
+        return False
+    row.is_used = True
+    db.session.commit()
+    return True
+
+
 def _guest_ai_reply(question):
     q = (question or "").strip().lower()
     if not q:
@@ -81,6 +175,67 @@ def _guest_ai_reply(question):
     if any(k in q for k in ["chat", "message", "support", "admin"]):
         return "Use the message icon to contact admin directly. Sign in to unlock full order chat with writers."
     return "Thanks. For account-specific help, send a message via the message icon or sign in to continue."
+
+
+def _ai_generate_reply(question, history, user):
+    q = (question or "").strip()
+    ql = q.lower()
+    name = (user.name.split()[0] if user and user.is_authenticated and user.name else "there")
+
+    if not q:
+        return "I am ready. Tell me your topic, deadline, level, and word count, and I will guide the next step."
+
+    if any(k in ql for k in ["price", "cost", "quote", "budget"]):
+        return (
+            "Pricing is calculated from task type, level, word count, and deadline urgency. "
+            "Open Place Order and fill all fields for a live estimate. "
+            "If you share your details here, I can help you estimate before checkout."
+        )
+    if any(k in ql for k in ["deadline", "urgent", "hours", "days", "time"]):
+        return (
+            "For urgent work, submit exact date and time with timezone in Place Order. "
+            "After a writer is assigned, live client-writer chat opens for quick clarifications and draft updates."
+        )
+    if any(k in ql for k in ["writer", "expert", "niche", "subject"]):
+        return (
+            "You can filter writers by subject and ratings, then admin matches based on availability and expertise. "
+            "Share your subject now and I will suggest what profile to choose."
+        )
+    if any(k in ql for k in ["revision", "revise", "changes"]):
+        return (
+            "Revisions are managed inside the order workspace. "
+            "Use clear bullet points for change requests so the writer can close them fast."
+        )
+    if any(k in ql for k in ["plagiarism", "turnitin", "originality"]):
+        return (
+            "Each order follows originality checks before final delivery. "
+            "You can request citation style, source count, and final similarity-report guidance in instructions."
+        )
+    if any(k in ql for k in ["hello", "hi", "hey"]):
+        return f"Hi {name}. I can help with orders, pricing, deadlines, writers, and revisions. What do you need first?"
+
+    if len(history) >= 2:
+        return (
+            "I understand. Based on our chat, next best step is: "
+            "1) confirm your exact requirements, 2) submit the order form, 3) keep updates in live order chat once assigned."
+        )
+    return (
+        "I can help with this. Share these details and I will give a precise plan: "
+        "task type, academic level, word count, deadline, and citation style."
+    )
+
+
+def _cleanup_temporary_ai_history():
+    cutoff = datetime.utcnow() - timedelta(days=2)
+    old_rows = AIConversationMessage.query.filter(
+        AIConversationMessage.user_id.is_(None),
+        AIConversationMessage.created_at < cutoff
+    ).all()
+    if not old_rows:
+        return
+    for row in old_rows:
+        db.session.delete(row)
+    db.session.commit()
 
 
 def _task_multiplier(task_type):
@@ -195,7 +350,10 @@ def get_grouped_chats(admin_id=None):
     chats = Message.query.order_by(Message.timestamp.asc()).all()
     grouped = {}
     for msg in chats:
-        if admin_id:
+        if msg.sender_id == 0 or msg.receiver_id == 0:
+            thread_id = _extract_guest_thread_id(msg.content) or "legacy"
+            partner_id = f"guest:{thread_id}"
+        elif admin_id:
             partner_id = msg.receiver_id if msg.sender_id == admin_id else msg.sender_id
         else:
             partner_id = msg.sender_id
@@ -214,7 +372,7 @@ def register():
             flash("An account with that email already exists. Please log in.", "warning")
             return redirect(url_for("main.login"))
         hashed_pw = generate_password_hash(form.password.data)
-        user = User(email=email, name=form.name.data.strip(), password_hash=hashed_pw, role="client")
+        user = User(email=email, name=form.name.data.strip(), password_hash=hashed_pw, role="client", email_verified=False)
         db.session.add(user)
         try:
             db.session.commit()
@@ -222,9 +380,43 @@ def register():
             db.session.rollback()
             flash("An account with that email already exists. Please log in.", "warning")
             return redirect(url_for("main.login"))
-        flash('Account created successfully! Please log in.', 'success')
-        return redirect(url_for('main.login'))
+        _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
+        session["pending_signup_user_id"] = user.id
+        flash("Account created. Enter the OTP sent to your email to verify your account.", "info")
+        return redirect(url_for('main.verify_email'))
     return render_template('register.html', form=form)
+
+
+@main.route("/verify-email", methods=["GET", "POST"])
+def verify_email():
+    pending_user_id = session.get("pending_signup_user_id")
+    if not pending_user_id:
+        flash("No pending email verification request found.", "warning")
+        return redirect(url_for("main.login"))
+    user = User.query.get(pending_user_id)
+    if not user:
+        session.pop("pending_signup_user_id", None)
+        flash("Verification request is invalid. Please register again.", "warning")
+        return redirect(url_for("main.register"))
+
+    if request.method == "POST":
+        action = (request.form.get("action") or "verify").strip()
+        if action == "resend":
+            _issue_otp(email=user.email, purpose="signup", user_id=user.id, minutes=15)
+            flash("A new OTP has been sent to your email.", "info")
+            return redirect(url_for("main.verify_email"))
+        code = (request.form.get("code") or "").strip()
+        if not code:
+            flash("Enter the OTP code.", "warning")
+            return render_template("verify_email.html", email=user.email)
+        if _verify_otp(user.email, "signup", code):
+            user.email_verified = True
+            db.session.commit()
+            session.pop("pending_signup_user_id", None)
+            flash("Email verified. You can now sign in.", "success")
+            return redirect(url_for("main.login"))
+        flash("Invalid or expired OTP.", "danger")
+    return render_template("verify_email.html", email=user.email)
 
 @main.route('/send_message', methods=['POST'])
 @login_required
@@ -256,6 +448,59 @@ def get_messages():
         } for m in messages
     ])
 
+
+@main.route("/support/chat/send", methods=["POST"])
+@login_required
+def support_chat_send():
+    if current_user.is_admin:
+        return jsonify({"ok": False, "error": "Use admin inbox for replies."}), 403
+    payload = request.get_json(silent=True) or {}
+    text = (payload.get("message") or "").strip()
+    if not text:
+        return jsonify({"ok": False, "error": "Message is required."}), 400
+    admin = _get_primary_admin()
+    if not admin:
+        return jsonify({"ok": False, "error": "Admin is unavailable right now."}), 503
+    db.session.add(Message(
+        sender_id=current_user.id,
+        receiver_id=admin.id,
+        content=f"{SUPPORT_CHAT_TAG} {text}",
+        is_admin=False,
+        is_read=False,
+    ))
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@main.route("/support/chat/messages", methods=["GET"])
+@login_required
+def support_chat_messages():
+    if current_user.is_admin:
+        return jsonify({"ok": False, "error": "Use admin inbox."}), 403
+    admin = _get_primary_admin()
+    if not admin:
+        return jsonify({"ok": True, "messages": []})
+    thread = Message.query.filter(
+        (
+            ((Message.sender_id == current_user.id) & (Message.receiver_id == admin.id))
+            | ((Message.sender_id == admin.id) & (Message.receiver_id == current_user.id))
+        )
+        & Message.content.like(f"{SUPPORT_CHAT_TAG}%")
+    ).order_by(Message.timestamp.asc()).all()
+    unread = [m for m in thread if m.receiver_id == current_user.id and not m.is_read]
+    for item in unread:
+        item.is_read = True
+    if unread:
+        db.session.commit()
+
+    payload = [{
+        "id": m.id,
+        "from_admin": m.sender_id == admin.id,
+        "content": _strip_tag(m.content, r"^\[Support\]\s*"),
+        "timestamp": m.timestamp.strftime("%Y-%m-%d %H:%M") if m.timestamp else ""
+    } for m in thread]
+    return jsonify({"ok": True, "messages": payload})
+
 @main.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated and not current_user.is_admin:
@@ -267,6 +512,12 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.strip().lower()).first()
         if user and check_password_hash(user.password_hash, form.password.data):
+            verification_rollout_date = datetime(2026, 2, 18)
+            requires_verification = (user.created_at or datetime.utcnow()) >= verification_rollout_date
+            if requires_verification and not user.email_verified and not user.is_admin:
+                session["pending_signup_user_id"] = user.id
+                flash("Please verify your email before signing in.", "warning")
+                return redirect(url_for("main.verify_email"))
             if user.is_admin:
                 flash("Admin account detected. Please use the Admin Login page.", "info")
                 return redirect(url_for("main.admin_login"))
@@ -430,6 +681,7 @@ def dashboard():
         } if approved_apps else {}
         for app_item in approved_apps:
             assigned_writer_map[app_item.order_id] = writer_users.get(app_item.writer_user_id)
+    support_chat_enabled = _get_primary_admin() is not None
 
     return render_template(
         "dashboard.html",
@@ -465,6 +717,7 @@ def dashboard():
         client_refunds=client_refunds,
         open_tickets=open_tickets,
         assigned_writer_map=assigned_writer_map,
+        support_chat_enabled=support_chat_enabled,
     )
 
 
@@ -534,8 +787,9 @@ def profile():
             return render_template("profile.html", form=form)
         current_user.name = form.name.data or current_user.name
         current_user.email = (form.email.data or current_user.email).strip().lower()
+        pending_password_hash = None
         if form.password.data:
-            current_user.password_hash = generate_password_hash(form.password.data)
+            pending_password_hash = generate_password_hash(form.password.data)
         if form.photo.data:
             filename = secure_filename(form.photo.data.filename)
             photo_name = f"user_{current_user.id}_{int(datetime.utcnow().timestamp())}_{filename}"
@@ -561,6 +815,11 @@ def profile():
             db.session.rollback()
             flash("That email is already used by another account.", "danger")
             return render_template("profile.html", form=form)
+        if pending_password_hash:
+            session["pending_password_hash"] = pending_password_hash
+            _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
+            flash("Profile updated. Verify OTP sent to your email to complete password change.", "info")
+            return redirect(url_for("main.verify_password_change"))
         flash("Profile updated.", "success")
         return redirect(url_for("main.profile"))
     return render_template("profile.html", form=form)
@@ -599,8 +858,9 @@ def settings():
         current_user.citation_style = form.citation_style.data or "APA"
         current_user.favorite_writers = (form.favorite_writers.data or "").strip() or None
         current_user.marketing_opt_in = bool(form.marketing_opt_in.data)
+        pending_password_hash = None
         if form.password.data:
-            current_user.password_hash = generate_password_hash(form.password.data)
+            pending_password_hash = generate_password_hash(form.password.data)
         if form.photo.data:
             filename = secure_filename(form.photo.data.filename)
             photo_name = f"user_{current_user.id}_{int(datetime.utcnow().timestamp())}_{filename}"
@@ -613,6 +873,11 @@ def settings():
             db.session.rollback()
             flash("That email is already used by another account.", "danger")
             return render_template("settings.html", form=form)
+        if pending_password_hash:
+            session["pending_password_hash"] = pending_password_hash
+            _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
+            flash("Settings saved. Verify OTP sent to your email to complete password change.", "info")
+            return redirect(url_for("main.verify_password_change"))
         flash("Settings saved.", "success")
         return redirect(url_for("main.settings"))
     return render_template("settings.html", form=form)
@@ -646,18 +911,66 @@ def export_user_data():
 @main.route("/settings/request-delete", methods=["POST"])
 @login_required
 def request_delete_account():
-    db.session.add(
-        SupportTicket(
-            user_id=current_user.id,
-            subject="Account Deletion Request (GDPR/CCPA)",
-            message="User requested account deletion and personal data removal.",
-            priority="high",
-            status="open",
-        )
-    )
-    db.session.commit()
-    flash("Deletion request submitted to admin.", "info")
-    return redirect(url_for("main.settings"))
+    _issue_otp(email=current_user.email, purpose="delete_account", user_id=current_user.id, minutes=10)
+    session["pending_delete_user_id"] = current_user.id
+    flash("OTP sent. Enter code to confirm account deletion request.", "warning")
+    return redirect(url_for("main.verify_delete_account"))
+
+
+@main.route("/settings/verify-password-change", methods=["GET", "POST"])
+@login_required
+def verify_password_change():
+    pending_hash = session.get("pending_password_hash")
+    if not pending_hash:
+        flash("No pending password change request found.", "warning")
+        return redirect(url_for("main.settings"))
+    if request.method == "POST":
+        action = (request.form.get("action") or "verify").strip()
+        if action == "resend":
+            _issue_otp(email=current_user.email, purpose="password_change", user_id=current_user.id, minutes=10)
+            flash("A new OTP has been sent.", "info")
+            return redirect(url_for("main.verify_password_change"))
+        code = (request.form.get("code") or "").strip()
+        if _verify_otp(current_user.email, "password_change", code):
+            current_user.password_hash = pending_hash
+            db.session.commit()
+            session.pop("pending_password_hash", None)
+            flash("Password changed successfully.", "success")
+            return redirect(url_for("main.settings"))
+        flash("Invalid or expired OTP.", "danger")
+    return render_template("verify_action.html", title="Verify Password Change", email=current_user.email, action_route=url_for("main.verify_password_change"))
+
+
+@main.route("/settings/verify-delete-account", methods=["GET", "POST"])
+@login_required
+def verify_delete_account():
+    pending_uid = session.get("pending_delete_user_id")
+    if pending_uid != current_user.id:
+        flash("No pending account deletion request found.", "warning")
+        return redirect(url_for("main.settings"))
+    if request.method == "POST":
+        action = (request.form.get("action") or "verify").strip()
+        if action == "resend":
+            _issue_otp(email=current_user.email, purpose="delete_account", user_id=current_user.id, minutes=10)
+            flash("A new OTP has been sent.", "info")
+            return redirect(url_for("main.verify_delete_account"))
+        code = (request.form.get("code") or "").strip()
+        if _verify_otp(current_user.email, "delete_account", code):
+            db.session.add(
+                SupportTicket(
+                    user_id=current_user.id,
+                    subject="Confirmed Account Deletion Request",
+                    message="User completed OTP verification for account deletion.",
+                    priority="high",
+                    status="open",
+                )
+            )
+            db.session.commit()
+            session.pop("pending_delete_user_id", None)
+            flash("Deletion request confirmed and sent to admin.", "info")
+            return redirect(url_for("main.settings"))
+        flash("Invalid or expired OTP.", "danger")
+    return render_template("verify_action.html", title="Confirm Account Deletion", email=current_user.email, action_route=url_for("main.verify_delete_account"))
 
 
 @main.route("/writer/apply", methods=["GET", "POST"])
@@ -731,17 +1044,54 @@ def public_writers():
     writers = Writer.query.filter_by(approved=True).order_by(Writer.id.desc()).all()
     return render_template('public_writers.html', writers=writers)
 
+
+def _can_manage_blog(user):
+    return bool(user and user.is_authenticated and (user.is_admin or _is_approved_writer(user)))
+
+
+def _apply_blog_filters(base_query):
+    q = (request.args.get("q") or "").strip()
+    category = (request.args.get("category") or "").strip()
+    pillar = (request.args.get("pillar") or "").strip()
+    cluster = (request.args.get("cluster") or "").strip()
+
+    query = base_query.filter(BlogPost.is_published.is_(True))
+    if q:
+        query = query.filter(
+            BlogPost.title.ilike(f"%{q}%")
+            | BlogPost.content.ilike(f"%{q}%")
+            | BlogPost.excerpt.ilike(f"%{q}%")
+            | BlogPost.pillar.ilike(f"%{q}%")
+            | BlogPost.cluster_topic.ilike(f"%{q}%")
+        )
+    if category:
+        query = query.filter(BlogPost.category == category)
+    if pillar:
+        query = query.filter(BlogPost.pillar == pillar)
+    if cluster:
+        query = query.filter(BlogPost.cluster_topic == cluster)
+    return query, q, category, pillar, cluster
+
+
 @main.route("/Blog")
 def blog_list():
-    query = request.args.get("q", "")
     page = request.args.get("page", 1, type=int)
-
-    blogs = BlogPost.query
-    if query:
-        blogs = blogs.filter(BlogPost.title.contains(query))
-
-    blogs = blogs.order_by(BlogPost.created_at.desc()).paginate(page=page, per_page=5)
-    return render_template("blog.html", blogs=blogs, query=query)
+    query, q, category, pillar, cluster = _apply_blog_filters(BlogPost.query)
+    blogs = query.order_by(BlogPost.created_at.desc()).paginate(page=page, per_page=6)
+    pillars = [row[0] for row in db.session.query(BlogPost.pillar).filter(BlogPost.pillar.isnot(None)).distinct().all() if row[0]]
+    clusters = [row[0] for row in db.session.query(BlogPost.cluster_topic).filter(BlogPost.cluster_topic.isnot(None)).distinct().all() if row[0]]
+    categories = [row[0] for row in db.session.query(BlogPost.category).filter(BlogPost.category.isnot(None)).distinct().all() if row[0]]
+    return render_template(
+        "blog.html",
+        blogs=blogs,
+        query=q,
+        selected_category=category,
+        selected_pillar=pillar,
+        selected_cluster=cluster,
+        pillars=sorted(pillars),
+        clusters=sorted(clusters),
+        categories=sorted(categories),
+    )
 
 @main.route('/admin')
 def admin_dashboard():
@@ -777,6 +1127,10 @@ def admin_dashboard():
     overdue_orders = Order.query.filter(Order.deadline < now, Order.status.in_(["Open", "In Progress"])).count()
     pending_withdrawals = Payment.query.filter_by(status="pending").count()
     unread_admin_msgs = Message.query.filter_by(receiver_id=current_user.id, is_read=False).count()
+    new_users_24h = User.query.filter(User.created_at >= (now - timedelta(hours=24))).count()
+    incoming_guest_msgs = Message.query.filter_by(receiver_id=current_user.id, is_read=False).filter(Message.sender_id == 0).count()
+    open_support_tickets = SupportTicket.query.filter(SupportTicket.status.in_(["open", "in_progress"])).count()
+    pending_orders = Order.query.filter_by(status="Pending").count()
 
     alerts = []
     if pending_applications:
@@ -806,6 +1160,34 @@ def admin_dashboard():
             "title": f"{unread_admin_msgs} unread admin messages",
             "action": url_for("main.admin_chat_grouped"),
             "action_label": "Open inbox"
+        })
+    if new_users_24h:
+        alerts.append({
+            "level": "success",
+            "title": f"{new_users_24h} new users registered in last 24h",
+            "action": url_for("main.admin_dashboard"),
+            "action_label": "View recent users"
+        })
+    if incoming_guest_msgs:
+        alerts.append({
+            "level": "warning",
+            "title": f"{incoming_guest_msgs} unread guest messages",
+            "action": url_for("main.admin_chat_grouped"),
+            "action_label": "Reply to guests"
+        })
+    if open_support_tickets:
+        alerts.append({
+            "level": "danger" if open_support_tickets > 10 else "warning",
+            "title": f"{open_support_tickets} support tickets need attention",
+            "action": url_for("main.admin_support_tickets"),
+            "action_label": "Open support queue"
+        })
+    if pending_orders:
+        alerts.append({
+            "level": "info",
+            "title": f"{pending_orders} orders awaiting assignment",
+            "action": url_for("main.admin_orders", status="Pending"),
+            "action_label": "Assign orders"
         })
 
     recent_users = User.query.order_by(User.created_at.desc()).limit(6).all()
@@ -1443,6 +1825,25 @@ def approve_job_application(application_id):
     ))
     db.session.commit()
 
+    client_user = User.query.get(order.user_id)
+    if client_user:
+        tracking_url = url_for("main.dashboard", _external=True)
+        order_chat_url = url_for("main.order_chat", order_id=order.id, _external=True)
+        email_body = (
+            f"Hello {client_user.name},\n\n"
+            f"Your order #{order.id} has been assigned to writer {writer_user.name}.\n"
+            f"You can now track progress and chat directly with your writer.\n\n"
+            f"Track order: {tracking_url}\n"
+            f"Open order chat: {order_chat_url}\n\n"
+            "Thank you for choosing AcademicPro."
+        )
+        msg = MailMessage(
+            subject=f"Order #{order.id} assigned - writer {writer_user.name}",
+            recipients=[client_user.email],
+            body=email_body,
+        )
+        _send_mail_safely(msg)
+
     flash("Writer approved and client notified.", "success")
     return redirect(url_for("main.admin_orders"))
 
@@ -1451,12 +1852,7 @@ def approve_job_application(application_id):
 @login_required
 def order_chat(order_id):
     order = Order.query.get_or_404(order_id)
-    approved_app = JobApplication.query.filter_by(order_id=order.id, status="approved").first()
-    allowed_ids = {order.user_id}
-    if approved_app:
-        allowed_ids.add(approved_app.writer_user_id)
-    if current_user.is_admin:
-        allowed_ids.add(current_user.id)
+    approved_app, allowed_ids = _order_access_context(order)
     if current_user.id not in allowed_ids and not current_user.is_admin:
         abort(403)
 
@@ -1589,6 +1985,69 @@ def order_chat(order_id):
     )
 
 
+@main.route("/orders/<int:order_id>/chat/messages", methods=["GET"])
+@login_required
+def order_chat_messages(order_id):
+    order = Order.query.get_or_404(order_id)
+    approved_app, allowed_ids = _order_access_context(order)
+    if current_user.id not in allowed_ids and not current_user.is_admin:
+        abort(403)
+
+    status_lower = (order.status or "").lower()
+    chat_active = status_lower in ("open", "in progress", "revision") and approved_app is not None
+    thread = Message.query.filter(
+        Message.content.like(f"[Order #{order.id}]%")
+    ).order_by(Message.timestamp.asc()).all()
+
+    unread = [m for m in thread if m.receiver_id == current_user.id and not m.is_read]
+    for item in unread:
+        item.is_read = True
+    if unread:
+        db.session.commit()
+
+    payload = [{
+        "id": m.id,
+        "mine": m.sender_id == current_user.id,
+        "content": _strip_tag(m.content, rf"^\[Order #{order.id}\]\s*"),
+        "timestamp": m.timestamp.strftime("%Y-%m-%d %H:%M") if m.timestamp else ""
+    } for m in thread]
+    return jsonify({"ok": True, "chat_active": chat_active, "messages": payload})
+
+
+@main.route("/orders/<int:order_id>/admin/messages", methods=["GET"])
+@login_required
+def order_admin_messages(order_id):
+    order = Order.query.get_or_404(order_id)
+    approved_app, allowed_ids = _order_access_context(order)
+    if current_user.id not in allowed_ids and not current_user.is_admin:
+        abort(403)
+    admin = _get_primary_admin()
+    if not admin:
+        return jsonify({"ok": True, "messages": []})
+
+    thread = Message.query.filter(
+        (
+            ((Message.sender_id == current_user.id) & (Message.receiver_id == admin.id))
+            | ((Message.sender_id == admin.id) & (Message.receiver_id == current_user.id))
+        )
+        & Message.content.like(f"[Admin Chat #{order.id}]%")
+    ).order_by(Message.timestamp.asc()).all()
+
+    unread = [m for m in thread if m.receiver_id == current_user.id and not m.is_read]
+    for item in unread:
+        item.is_read = True
+    if unread:
+        db.session.commit()
+
+    payload = [{
+        "id": m.id,
+        "mine": m.sender_id == current_user.id,
+        "content": _strip_tag(m.content, rf"^\[Admin Chat #{order.id}\]\s*"),
+        "timestamp": m.timestamp.strftime("%Y-%m-%d %H:%M") if m.timestamp else ""
+    } for m in thread]
+    return jsonify({"ok": True, "messages": payload})
+
+
 @main.route("/orders/<int:order_id>/review", methods=["POST"])
 @login_required
 def submit_order_review(order_id):
@@ -1717,10 +2176,12 @@ def guest_chat_send():
         return jsonify({"ok": False, "error": "Message is required."}), 400
     admin = _get_primary_admin()
     receiver_id = admin.id if admin else 1
+    thread_id = _get_guest_thread_id()
+    prefix = _guest_thread_prefix(thread_id)
     if email:
-        content = f"[Guest:{email}] {text}"
+        content = f"{prefix} [Guest:{email}] {text}"
     else:
-        content = f"[Guest] {text}"
+        content = f"{prefix} [Guest] {text}"
     db.session.add(
         Message(
             sender_id=0,
@@ -1731,7 +2192,32 @@ def guest_chat_send():
         )
     )
     db.session.commit()
-    return jsonify({"ok": True, "message": "Message sent. Admin will respond after you sign in or by email if provided."})
+    return jsonify({"ok": True, "message": "Message sent. Admin can reply here live."})
+
+
+@main.route("/guest/chat/messages", methods=["GET"])
+def guest_chat_messages():
+    thread_id = _get_guest_thread_id()
+    prefix = _guest_thread_prefix(thread_id)
+    like_pattern = f"%{prefix}%"
+    messages = Message.query.filter(
+        ((Message.sender_id == 0) | (Message.receiver_id == 0)) &
+        (Message.content.like(like_pattern))
+    ).order_by(Message.timestamp.asc()).all()
+
+    unread_admin = [m for m in messages if m.sender_id != 0 and not m.is_read]
+    for row in unread_admin:
+        row.is_read = True
+    if unread_admin:
+        db.session.commit()
+
+    payload = [{
+        "id": m.id,
+        "from_admin": m.sender_id != 0,
+        "content": re.sub(r"^\[GUEST_THREAD:[^\]]+\]\s*", "", m.content or "").strip(),
+        "timestamp": m.timestamp.strftime("%Y-%m-%d %H:%M") if m.timestamp else None
+    } for m in messages]
+    return jsonify({"ok": True, "messages": payload})
 
 
 @main.route("/guest/ai/ask", methods=["POST"])
@@ -1739,6 +2225,59 @@ def guest_ai_ask():
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
     return jsonify({"ok": True, "answer": _guest_ai_reply(question)})
+
+
+@main.route("/ai/chat/history", methods=["GET"])
+def ai_chat_history():
+    _cleanup_temporary_ai_history()
+    if current_user.is_authenticated:
+        rows = AIConversationMessage.query.filter_by(user_id=current_user.id).order_by(AIConversationMessage.created_at.asc()).all()
+    else:
+        thread_id = _get_ai_guest_thread_id()
+        rows = AIConversationMessage.query.filter_by(user_id=None, guest_thread_id=thread_id).order_by(AIConversationMessage.created_at.asc()).all()
+    payload = [{
+        "id": r.id,
+        "role": r.role,
+        "content": r.content,
+        "timestamp": r.created_at.strftime("%Y-%m-%d %H:%M") if r.created_at else ""
+    } for r in rows]
+    return jsonify({"ok": True, "messages": payload})
+
+
+@main.route("/ai/chat/send", methods=["POST"])
+def ai_chat_send():
+    _cleanup_temporary_ai_history()
+    payload = request.get_json(silent=True) or {}
+    question = (payload.get("message") or "").strip()
+    if not question:
+        return jsonify({"ok": False, "error": "Message is required."}), 400
+
+    if current_user.is_authenticated:
+        user_id = current_user.id
+        guest_thread_id = None
+        history_rows = AIConversationMessage.query.filter_by(user_id=user_id).order_by(AIConversationMessage.created_at.asc()).all()
+    else:
+        user_id = None
+        guest_thread_id = _get_ai_guest_thread_id()
+        history_rows = AIConversationMessage.query.filter_by(user_id=None, guest_thread_id=guest_thread_id).order_by(AIConversationMessage.created_at.asc()).all()
+
+    history = [{"role": h.role, "content": h.content} for h in history_rows[-12:]]
+    answer = _ai_generate_reply(question, history, current_user if current_user.is_authenticated else None)
+
+    db.session.add(AIConversationMessage(
+        user_id=user_id,
+        guest_thread_id=guest_thread_id,
+        role="user",
+        content=question
+    ))
+    db.session.add(AIConversationMessage(
+        user_id=user_id,
+        guest_thread_id=guest_thread_id,
+        role="assistant",
+        content=answer
+    ))
+    db.session.commit()
+    return jsonify({"ok": True, "answer": answer})
 
 
 @main.route("/pricing/estimate", methods=["POST"])
@@ -1768,29 +2307,57 @@ def pricing_estimate():
 @main.route('/admin/chat/grouped')
 def admin_chat_grouped():
     grouped_chats = get_grouped_chats(current_user.id)
-    partner_ids = [pid for pid in grouped_chats.keys() if pid and pid > 0]
+    partner_ids = [pid for pid in grouped_chats.keys() if isinstance(pid, int) and pid > 0]
     users = {u.id: u for u in User.query.filter(User.id.in_(partner_ids)).all()} if partner_ids else {}
     return render_template('admin_chat_grouped.html', grouped_chats=grouped_chats, chat_users=users)
 
 @main.route('/admin/chat/reply', methods=['POST'])
 def reply_to_user():
     user_id = request.form.get('user_id')
-    message = request.form.get('message')
+    guest_thread_id = (request.form.get("guest_thread_id") or "").strip().lower()
+    message = (request.form.get('message') or "").strip()
+    if not message:
+        flash("Message cannot be empty.", "warning")
+        return redirect(url_for('main.admin_chat_grouped'))
 
-    msg = Message(
-        sender_id=current_user.id,    # admin's user id
-        receiver_id=int(user_id),     # the user being replied to
-        content=message,
-        is_admin=True,
-        is_read=False
-    )
+    if guest_thread_id:
+        msg = Message(
+            sender_id=current_user.id,
+            receiver_id=0,
+            content=f"{_guest_thread_prefix(guest_thread_id)} {message}",
+            is_admin=True,
+            is_read=False
+        )
+    else:
+        msg = Message(
+            sender_id=current_user.id,
+            receiver_id=int(user_id),
+            content=message,
+            is_admin=True,
+            is_read=False
+        )
     db.session.add(msg)
     db.session.commit()
     return redirect(url_for('main.admin_chat_grouped'))
 
 @main.route('/chat/messages')
+@login_required
 def get_messages_json():
-    messages = Message.query.order_by(Message.timestamp.asc()).all()
+    if current_user.is_admin:
+        partner_id = request.args.get("partner_id", type=int)
+        if partner_id:
+            messages = Message.query.filter(
+                ((Message.sender_id == current_user.id) & (Message.receiver_id == partner_id)) |
+                ((Message.sender_id == partner_id) & (Message.receiver_id == current_user.id))
+            ).order_by(Message.timestamp.asc()).all()
+        else:
+            messages = Message.query.order_by(Message.timestamp.asc()).all()
+    else:
+        messages = Message.query.filter(
+            (Message.sender_id == current_user.id) |
+            (Message.receiver_id == current_user.id)
+        ).order_by(Message.timestamp.asc()).all()
+
     result = [{
         "sender_id": msg.sender_id,
         "receiver_id": msg.receiver_id,
@@ -2051,51 +2618,98 @@ def admin_settings():
     }
     return render_template('admin_settings.html', settings=settings)
 
-@main.route('/Blog')
+@main.route('/blogs')
+@main.route('/blog')
 def public_blogs():
-    posts = BlogPost.query.order_by(BlogPost.created_at.desc()).all()
-    return render_template('blog.html', blogs=posts)
+    return redirect(url_for("main.blog_list", **request.args))
 
 @main.route("/Blog/<int:id>")
 def blog_detail(id):
     blog = BlogPost.query.get_or_404(id)
     return render_template("blog_detail.html", blog=blog)
 
-@main.route('/admin/Blog', methods=['GET', 'POST'])
-def admin_Blog():
+@main.route('/blog/manage', methods=['GET', 'POST'])
+@login_required
+def blog_manage():
+    if not _can_manage_blog(current_user):
+        abort(403)
     if request.method == 'POST':
-        title = request.form.get('title')
-        content = request.form.get('content')
+        title = (request.form.get('title') or "").strip()
+        excerpt = (request.form.get('excerpt') or "").strip() or None
+        category = (request.form.get('category') or "Academic Skills").strip()
+        pillar = (request.form.get('pillar') or "").strip() or None
+        cluster_topic = (request.form.get('cluster_topic') or "").strip() or None
+        is_published = bool(request.form.get("is_published"))
+        content = (request.form.get('content') or "").strip()
 
         if not title or not content:
-            return "Missing data", 400
+            flash("Title and content are required.", "warning")
+            return redirect(url_for('main.blog_manage'))
 
-        new_post = BlogPost(title=title, content=content)
+        new_post = BlogPost(
+            title=title,
+            excerpt=excerpt,
+            category=category,
+            pillar=pillar,
+            cluster_topic=cluster_topic,
+            content=content,
+            author_id=current_user.id,
+            author_name=current_user.name,
+            is_published=is_published
+        )
         db.session.add(new_post)
         db.session.commit()
-        return redirect(url_for('main.admin_Blog'))
+        flash("Blog post published.", "success")
+        return redirect(url_for('main.blog_manage'))
 
     posts = BlogPost.query.order_by(BlogPost.created_at.desc()).all()
-    return render_template('admin_Blog.html', posts=posts)
+    return render_template('blog_manage.html', posts=posts)
+
+
+@main.route('/admin/Blog', methods=['GET', 'POST'])
+@login_required
+def admin_Blog():
+    if not current_user.is_admin:
+        abort(403)
+    return redirect(url_for("main.blog_manage"))
 
 @main.route('/admin/blog/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_blog(id):
+    if not _can_manage_blog(current_user):
+        abort(403)
     post = BlogPost.query.get_or_404(id)
+    if not current_user.is_admin and post.author_id != current_user.id:
+        abort(403)
     if request.method == 'POST':
-        post.title = request.form['title']
-        post.content = request.form['content']
+        post.title = (request.form.get('title') or "").strip()
+        post.excerpt = (request.form.get('excerpt') or "").strip() or None
+        post.category = (request.form.get('category') or "Academic Skills").strip()
+        post.pillar = (request.form.get('pillar') or "").strip() or None
+        post.cluster_topic = (request.form.get('cluster_topic') or "").strip() or None
+        post.content = (request.form.get('content') or "").strip()
+        post.is_published = bool(request.form.get("is_published"))
+        post.author_name = post.author_name or current_user.name
+        if not post.title or not post.content:
+            flash("Title and content are required.", "warning")
+            return redirect(url_for('main.edit_blog', id=post.id))
         db.session.commit()
         flash('Blog post updated!', 'success')
-        return redirect(url_for('main.admin_Blog'))
+        return redirect(url_for('main.blog_manage'))
     return render_template('edit_blog.html', post=post)
 
 @main.route('/admin/blog/<int:id>/delete')
+@login_required
 def delete_blog(id):
+    if not _can_manage_blog(current_user):
+        abort(403)
     post = BlogPost.query.get_or_404(id)
+    if not current_user.is_admin and post.author_id != current_user.id:
+        abort(403)
     db.session.delete(post)
     db.session.commit()
     flash('Blog post deleted.', 'info')
-    return redirect(url_for('main.admin_Blog'))
+    return redirect(url_for('main.blog_manage'))
 
 @main.route('/admin/messages/json', methods=['GET'])
 @login_required

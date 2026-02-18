@@ -161,6 +161,15 @@
           <div class="text-muted small">No new notifications.</div>
           {% endif %}
           <a href="{{ url_for('main.notifications') }}" class="btn btn-outline-secondary btn-sm mt-2">Open Notifications</a>
+          {% if support_chat_enabled %}
+          <hr>
+          <div class="small text-muted mb-2">Live Chat with Admin</div>
+          <div id="supportChatLog" class="border rounded p-2 mb-2 bg-light" style="height: 180px; overflow-y: auto;"></div>
+          <div class="input-group input-group-sm">
+            <input id="supportChatInput" class="form-control" placeholder="Type message to admin">
+            <button id="supportChatSend" class="btn btn-primary" type="button">Send</button>
+          </div>
+          {% endif %}
         </div>
         {% endif %}
       </div>
@@ -186,7 +195,8 @@
         <div class="small mb-1"><strong>Expertise:</strong> {{ writer_subject }}</div>
         <div class="small mb-2"><strong>Bio:</strong> {{ writer_bio }}</div>
         <a href="{{ url_for('main.profile') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">Edit Profile</a>
-        <a href="{{ url_for('main.writer_samples') }}" class="btn btn-outline-secondary btn-sm w-100">Upload Samples</a>
+        <a href="{{ url_for('main.writer_samples') }}" class="btn btn-outline-secondary btn-sm w-100 mb-2">Upload Samples</a>
+        <a href="{{ url_for('main.blog_manage') }}" class="btn btn-outline-dark btn-sm w-100">Manage Blog Posts</a>
       </div>
 
       <div class="section-card mb-3">
@@ -352,6 +362,15 @@
           <a href="{{ url_for('main.notifications') }}" class="btn btn-outline-secondary btn-sm">Order Notifications</a>
           <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-primary btn-sm">Contact Admin Support</a>
         </div>
+        {% if support_chat_enabled %}
+        <hr>
+        <div class="small text-muted mb-2">Live Chat with Admin</div>
+        <div id="supportChatLog" class="border rounded p-2 mb-2 bg-light" style="height: 180px; overflow-y: auto;"></div>
+        <div class="input-group input-group-sm">
+          <input id="supportChatInput" class="form-control" placeholder="Type message to admin">
+          <button id="supportChatSend" class="btn btn-primary" type="button">Send</button>
+        </div>
+        {% endif %}
       </div>
       {% endif %}
     </div>
@@ -475,5 +494,67 @@
   }
   updateRemaining();
   setInterval(updateRemaining, 60000);
+
+  const supportLog = document.getElementById("supportChatLog");
+  const supportInput = document.getElementById("supportChatInput");
+  const supportSend = document.getElementById("supportChatSend");
+  let supportPoll = null;
+  function esc(v) {
+    return String(v || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+  async function refreshSupportChat() {
+    if (!supportLog) return;
+    try {
+      const res = await fetch("{{ url_for('main.support_chat_messages') }}", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return;
+      const rows = data.messages || [];
+      if (!rows.length) {
+        supportLog.innerHTML = '<div class="small text-muted">No messages yet.</div>';
+        return;
+      }
+      supportLog.innerHTML = rows.map((m) => {
+        const align = m.from_admin ? "text-start" : "text-end";
+        const cls = m.from_admin ? "bg-secondary" : "bg-primary";
+        return `<div class="mb-1 ${align}"><span class="badge ${cls} p-2">${esc(m.content)}</span><div class="small text-muted">${esc(m.timestamp)}</div></div>`;
+      }).join("");
+      supportLog.scrollTop = supportLog.scrollHeight;
+    } catch (_e) {}
+  }
+  async function sendSupportMessage() {
+    if (!supportInput || !supportInput.value.trim()) return;
+    const message = supportInput.value.trim();
+    supportInput.value = "";
+    try {
+      const res = await fetch("{{ url_for('main.support_chat_send') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return;
+      refreshSupportChat();
+    } catch (_e) {}
+  }
+  if (supportLog) {
+    refreshSupportChat();
+    supportPoll = setInterval(refreshSupportChat, 5000);
+  }
+  if (supportSend) {
+    supportSend.addEventListener("click", sendSupportMessage);
+  }
+  if (supportInput) {
+    supportInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendSupportMessage();
+      }
+    });
+  }
 </script>
 {% endblock %}

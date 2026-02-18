@@ -62,6 +62,7 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(50), nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="client")
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
     phone = db.Column(db.String(30), nullable=True)
     academic_level = db.Column(db.String(50), nullable=True)
     expertise_tags = db.Column(db.String(255), nullable=True)
@@ -199,8 +200,16 @@ class OrderFile(db.Model):
 class BlogPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
+    excerpt = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(80), nullable=False, default="Academic Skills")
+    pillar = db.Column(db.String(120), nullable=True)
+    cluster_topic = db.Column(db.String(120), nullable=True)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    author_name = db.Column(db.String(120), nullable=True)
+    is_published = db.Column(db.Boolean, default=True, nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
 class Sample(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -253,3 +262,23 @@ class OrderReview(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AIConversationMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    guest_thread_id = db.Column(db.String(64), nullable=True, index=True)
+    role = db.Column(db.String(20), nullable=False)  # user | assistant
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class OTPCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    email = db.Column(db.String(120), nullable=False, index=True)
+    purpose = db.Column(db.String(40), nullable=False, index=True)
+    code = db.Column(db.String(8), nullable=False)
+    is_used = db.Column(db.Boolean, default=False, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

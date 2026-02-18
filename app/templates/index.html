@@ -30,11 +30,44 @@
 
 <section class="mb-5">
   <h2 class="section-title text-center">How It Works</h2>
-  <div class="row g-4">
-    <div class="col-md-6"><div class="how-card"><h5>Submit Instructions</h5><p>Share your topic, length, and deadline.</p></div></div>
-    <div class="col-md-6"><div class="how-card"><h5>Choose Writer</h5><p>Select from top-rated experts in your field.</p></div></div>
-    <div class="col-md-6"><div class="how-card"><h5>Deposit Payment</h5><p>Securely confirm your order.</p></div></div>
-    <div class="col-md-6"><div class="how-card"><h5>Revise & Release</h5><p>Review, request changes, and approve final draft.</p></div></div>
+  <div class="section-card">
+    <div class="row g-3">
+      <div class="col-lg-4">
+        <div class="list-group" id="flowNav" role="tablist">
+          <button class="list-group-item list-group-item-action active" data-flow="step1">
+            1. Submit Instructions
+            <div class="small text-muted">Topic, level, word count, deadline</div>
+          </button>
+          <button class="list-group-item list-group-item-action" data-flow="step2">
+            2. Admin Review & Writer Match
+            <div class="small text-muted">Quality and expertise alignment</div>
+          </button>
+          <button class="list-group-item list-group-item-action" data-flow="step3">
+            3. Secure Deposit
+            <div class="small text-muted">Escrow-style payment confirmation</div>
+          </button>
+          <button class="list-group-item list-group-item-action" data-flow="step4">
+            4. Live Collaboration
+            <div class="small text-muted">Client ↔ writer chat during progress</div>
+          </button>
+          <button class="list-group-item list-group-item-action" data-flow="step5">
+            5. Review, Revision, Release
+            <div class="small text-muted">Finalize quality then release payment</div>
+          </button>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div id="flowDetail" class="how-card h-100">
+          <h5 id="flowTitle">Submit Instructions</h5>
+          <p id="flowBody" class="mb-2">Provide complete instructions with topic, academic level, citation style, deadline, and required sources. The clearer your brief, the faster and better your first draft.</p>
+          <ul id="flowBullets" class="small text-muted mb-0">
+            <li>Attach rubric, reference materials, and formatting notes.</li>
+            <li>Set your timezone to avoid deadline confusion.</li>
+            <li>Use the live calculator for transparent pricing.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -109,26 +142,9 @@
 </section>
 
 <div class="guest-float-stack" aria-label="Guest support tools">
-  <button id="guestAiFab" class="guest-fab ai" type="button" title="AI Support" aria-label="Open AI support">
-    <img src="{{ url_for('static', filename='img/logo-quill.jpg') }}" alt="AcademicPro AI" class="guest-fab-logo">
-  </button>
   {% if not current_user.is_authenticated %}
   <button id="guestMsgFab" class="guest-fab msg" type="button" title="Message Admin" aria-label="Message admin">💬</button>
   {% endif %}
-</div>
-
-<div id="guestAiPanel" class="guest-panel d-none" role="dialog" aria-label="AI support assistant">
-  <div class="guest-panel-head">
-    <strong>AI Support</strong>
-    <button type="button" class="btn-close btn-close-sm" data-close="guestAiPanel" aria-label="Close"></button>
-  </div>
-  <div id="guestAiBody" class="guest-panel-body">
-    <div class="guest-bubble bot">Ask me about orders, deadlines, writers, or payments.</div>
-  </div>
-  <form id="guestAiForm" class="guest-panel-foot">
-    <input id="guestAiInput" class="form-control form-control-sm" placeholder="Type your question..." required>
-    <button class="btn btn-primary btn-sm" type="submit">Ask</button>
-  </form>
 </div>
 
 {% if not current_user.is_authenticated %}
@@ -138,6 +154,7 @@
     <button type="button" class="btn-close btn-close-sm" data-close="guestMsgPanel" aria-label="Close"></button>
   </div>
   <div class="guest-panel-body">
+    <div id="guestMsgThread" class="mb-2"></div>
     <div class="small text-muted mb-2">For follow-up, include your email.</div>
     <div class="mb-2">
       <input id="guestMsgEmail" class="form-control form-control-sm" placeholder="Email (optional)">
@@ -173,16 +190,13 @@
 {% block scripts %}
 <script>
   (function () {
-    const aiFab = document.getElementById("guestAiFab");
     const msgFab = document.getElementById("guestMsgFab");
-    const aiPanel = document.getElementById("guestAiPanel");
     const msgPanel = document.getElementById("guestMsgPanel");
 
     function togglePanel(panel) {
       panel.classList.toggle("d-none");
     }
 
-    if (aiFab && aiPanel) aiFab.addEventListener("click", function () { togglePanel(aiPanel); });
     if (msgFab && msgPanel) msgFab.addEventListener("click", function () { togglePanel(msgPanel); });
 
     document.querySelectorAll("[data-close]").forEach(function (btn) {
@@ -190,38 +204,59 @@
         const id = btn.getAttribute("data-close");
         const panel = document.getElementById(id);
         if (panel) panel.classList.add("d-none");
-      });
-    });
-
-    const aiForm = document.getElementById("guestAiForm");
-    const aiInput = document.getElementById("guestAiInput");
-    const aiBody = document.getElementById("guestAiBody");
-    if (aiForm && aiInput && aiBody) {
-      aiForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
-        const question = aiInput.value.trim();
-        if (!question) return;
-        aiBody.insertAdjacentHTML("beforeend", '<div class="guest-bubble me">' + question + "</div>");
-        aiInput.value = "";
-        try {
-          const res = await fetch("{{ url_for('main.guest_ai_ask') }}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question })
-          });
-          const data = await res.json();
-          aiBody.insertAdjacentHTML("beforeend", '<div class="guest-bubble bot">' + (data.answer || "Please try again.") + "</div>");
-          aiBody.scrollTop = aiBody.scrollHeight;
-        } catch (_err) {
-          aiBody.insertAdjacentHTML("beforeend", '<div class="guest-bubble bot">Unable to answer right now.</div>');
+        if (id === "guestMsgPanel" && guestMsgPollTimer) {
+          clearInterval(guestMsgPollTimer);
+          guestMsgPollTimer = null;
         }
       });
-    }
+    });
 
     const sendBtn = document.getElementById("guestMsgSendBtn");
     const msgInput = document.getElementById("guestMsgInput");
     const msgEmail = document.getElementById("guestMsgEmail");
     const msgStatus = document.getElementById("guestMsgStatus");
+    const msgThread = document.getElementById("guestMsgThread");
+    let guestMsgPollTimer = null;
+    let guestMsgLastId = 0;
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function renderGuestMessages(messages) {
+      if (!msgThread) return;
+      if (!messages.length) {
+        msgThread.innerHTML = '<div class="small text-muted">Start a conversation with admin.</div>';
+        return;
+      }
+      msgThread.innerHTML = messages.map(function (m) {
+        const bubbleClass = m.from_admin ? "bot" : "me";
+        const stamp = m.timestamp ? '<div class="small text-muted mt-1">' + escapeHtml(m.timestamp) + '</div>' : "";
+        return '<div class="guest-bubble ' + bubbleClass + '">' + escapeHtml(m.content) + stamp + '</div>';
+      }).join("");
+      msgThread.scrollTop = msgThread.scrollHeight;
+      const last = messages[messages.length - 1];
+      guestMsgLastId = Math.max(guestMsgLastId, Number(last.id || 0));
+    }
+
+    async function refreshGuestMessages() {
+      if (!msgThread) return;
+      try {
+        const res = await fetch("{{ url_for('main.guest_chat_messages') }}", { cache: "no-store" });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          renderGuestMessages(data.messages || []);
+        }
+      } catch (_err) {
+        // Keep silent; polling should not interrupt the page.
+      }
+    }
+
     if (sendBtn && msgInput && msgStatus) {
       sendBtn.addEventListener("click", async function () {
         const message = msgInput.value.trim();
@@ -244,8 +279,23 @@
           }
           msgInput.value = "";
           msgStatus.textContent = data.message || "Message sent.";
+          await refreshGuestMessages();
         } catch (_err) {
           msgStatus.textContent = "Network error. Try again.";
+        }
+      });
+    }
+
+    if (msgFab && msgPanel) {
+      msgFab.addEventListener("click", function () {
+        if (!msgPanel.classList.contains("d-none")) {
+          refreshGuestMessages();
+          if (!guestMsgPollTimer) {
+            guestMsgPollTimer = setInterval(refreshGuestMessages, 5000);
+          }
+        } else if (guestMsgPollTimer) {
+          clearInterval(guestMsgPollTimer);
+          guestMsgPollTimer = null;
         }
       });
     }
@@ -255,6 +305,71 @@
       const toast = new bootstrap.Toast(guestToast, { delay: 9000 });
       toast.show();
       sessionStorage.setItem("guest_welcome_seen", "1");
+    }
+
+    const flowSteps = {
+      step1: {
+        title: "Submit Instructions",
+        body: "Provide complete instructions with topic, academic level, citation style, deadline, and required sources. The clearer your brief, the faster and better your first draft.",
+        bullets: [
+          "Attach rubric, reference materials, and formatting notes.",
+          "Set your timezone to avoid deadline confusion.",
+          "Use the live calculator for transparent pricing."
+        ]
+      },
+      step2: {
+        title: "Admin Review & Writer Match",
+        body: "Admin verifies order details and matches your project with a qualified writer based on subject expertise, workload, and performance history.",
+        bullets: [
+          "Writers are filtered by specialty and quality metrics.",
+          "Priority handling is applied for urgent deadlines.",
+          "You receive assignment notification once writer is approved."
+        ]
+      },
+      step3: {
+        title: "Secure Deposit",
+        body: "Payment is confirmed before writing begins to protect both parties. Funds are managed under platform rules and released after successful completion.",
+        bullets: [
+          "Clear pricing before final submission.",
+          "Structured milestones can be tracked in your dashboard.",
+          "Financial records remain visible under billing history."
+        ]
+      },
+      step4: {
+        title: "Live Collaboration",
+        body: "When a writer is assigned, direct client-writer chat activates in the order workspace for clarifications, draft updates, and timely decisions.",
+        bullets: [
+          "Order timeline and milestone tracker update continuously.",
+          "Files are organized into references, drafts, and final deliverables.",
+          "Admin support chat remains available for escalations."
+        ]
+      },
+      step5: {
+        title: "Review, Revision, Release",
+        body: "Review the submission, request revisions where needed, and approve the final version. Once approved, payment is released and order is archived.",
+        bullets: [
+          "Revision loop is tracked to closure.",
+          "Client can leave rating and feedback after completion.",
+          "History remains available for future follow-up."
+        ]
+      }
+    };
+    const flowNav = document.getElementById("flowNav");
+    const flowTitle = document.getElementById("flowTitle");
+    const flowBody = document.getElementById("flowBody");
+    const flowBullets = document.getElementById("flowBullets");
+    if (flowNav && flowTitle && flowBody && flowBullets) {
+      flowNav.querySelectorAll("[data-flow]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          flowNav.querySelectorAll("[data-flow]").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const step = flowSteps[btn.getAttribute("data-flow")];
+          if (!step) return;
+          flowTitle.textContent = step.title;
+          flowBody.textContent = step.body;
+          flowBullets.innerHTML = step.bullets.map((line) => `<li>${line}</li>`).join("");
+        });
+      });
     }
   })();
 </script>

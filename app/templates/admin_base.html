@@ -20,6 +20,7 @@
         <a class="nav-link {% if '/admin/settlements' in request.path %}active{% endif %}" href="{{ url_for('main.admin_settlements') }}">Financials</a>
         <a class="nav-link {% if '/admin/disputes' in request.path %}active{% endif %}" href="{{ url_for('main.admin_disputes') }}">Disputes</a>
         <a class="nav-link {% if '/admin/samples' in request.path %}active{% endif %}" href="{{ url_for('main.admin_samples') }}">Content & Quality</a>
+        <a class="nav-link {% if '/blog/manage' in request.path or '/admin/Blog' in request.path %}active{% endif %}" href="{{ url_for('main.blog_manage') }}">Blog</a>
         <a class="nav-link {% if '/admin/chat' in request.path or '/admin/messages' in request.path %}active{% endif %}" href="{{ url_for('main.admin_chat_grouped') }}">Communication</a>
         <a class="nav-link {% if '/admin/support-tickets' in request.path %}active{% endif %}" href="{{ url_for('main.admin_support_tickets') }}">Support Tickets</a>
         <a class="nav-link {% if '/admin/activity-logs' in request.path %}active{% endif %}" href="{{ url_for('main.admin_activity_logs') }}">Activity Logs</a>

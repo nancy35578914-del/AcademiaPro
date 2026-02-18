@@ -1,18 +1,41 @@
-{% extends "admin_base.html" %}
+{% extends "base.html" %}
+{% block title %}Edit Blog Post | AcademicPro{% endblock %}
 {% block content %}
-<div class="container mt-4">
-  <h2>Edit Blog Post</h2>
-  <form method="POST">
+<div class="container py-4" style="max-width: 980px;">
+  <h2 class="mb-3">Edit Blog Post</h2>
+  <form method="POST" class="section-card">
     <div class="mb-3">
       <label class="form-label">Title</label>
       <input type="text" class="form-control" name="title" value="{{ post.title }}" required>
     </div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Category</label>
+        <input type="text" class="form-control" name="category" value="{{ post.category or 'Academic Skills' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Pillar</label>
+        <input type="text" class="form-control" name="pillar" value="{{ post.pillar or '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Cluster Topic</label>
+        <input type="text" class="form-control" name="cluster_topic" value="{{ post.cluster_topic or '' }}">
+      </div>
+    </div>
+    <div class="mb-3 mt-3">
+      <label class="form-label">Excerpt</label>
+      <textarea class="form-control" name="excerpt" rows="2">{{ post.excerpt or '' }}</textarea>
+    </div>
     <div class="mb-3">
       <label class="form-label">Content</label>
-      <textarea class="form-control" name="content" rows="6" required>{{ post.content }}</textarea>
+      <textarea class="form-control" name="content" rows="10" required>{{ post.content }}</textarea>
+    </div>
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" name="is_published" id="is_published" {% if post.is_published %}checked{% endif %}>
+      <label class="form-check-label" for="is_published">Published</label>
     </div>
     <button type="submit" class="btn btn-primary">Update</button>
-    <a href="{{ url_for('main.admin_Blog') }}" class="btn btn-secondary">Cancel</a>
+    <a href="{{ url_for('main.blog_manage') }}" class="btn btn-secondary">Cancel</a>
   </form>
 </div>
 {% endblock %}

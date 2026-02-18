@@ -11,8 +11,8 @@
         <button class="accordion-button collapsed fw-semibold d-flex justify-content-between" type="button"
                 data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}"
                 aria-expanded="false" aria-controls="collapse{{ loop.index }}">
-          {% if partner_id == 0 %}
-            Guest Messages
+          {% if partner_id is string and partner_id.startswith('guest:') %}
+            Guest Thread #{{ partner_id.split(':', 1)[1][:8] }}
           {% elif chat_users.get(partner_id) %}
             {{ chat_users.get(partner_id).name }} ({{ chat_users.get(partner_id).email }})
           {% else %}
@@ -30,7 +30,11 @@
             {% for msg in messages %}
             <div class="mb-2 text-{{ 'end' if msg.sender_id == current_user.id else 'start' }}">
               <span class="badge bg-{{ 'secondary' if msg.sender_id == current_user.id else 'primary' }}">
-                {{ msg.content }}
+                {% if partner_id is string and partner_id.startswith('guest:') %}
+                  {{ msg.content.replace('[GUEST_THREAD:' ~ partner_id.split(':', 1)[1] ~ '] ', '') }}
+                {% else %}
+                  {{ msg.content }}
+                {% endif %}
               </span><br>
               <small class="text-muted">
                 {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') if msg.timestamp else 'No timestamp' }}
@@ -39,7 +43,13 @@
             {% endfor %}
           </div>
 
-          {% if partner_id != 0 %}
+          {% if partner_id is string and partner_id.startswith('guest:') %}
+          <form method="POST" class="input-group" action="{{ url_for('main.reply_to_user') }}">
+            <input type="hidden" name="guest_thread_id" value="{{ partner_id.split(':', 1)[1] }}">
+            <input type="text" name="message" class="form-control" placeholder="Reply to guest..." required>
+            <button type="submit" class="btn btn-success">Send</button>
+          </form>
+          {% elif partner_id != 0 %}
           <form method="POST" class="input-group" action="{{ url_for('main.reply_to_user') }}">
             <input type="hidden" name="user_id" value="{{ partner_id }}">
             <input type="text" name="message" class="form-control" placeholder="Reply..." required>

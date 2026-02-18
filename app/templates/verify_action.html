@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | AcademicPro{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-head">
+      <h2 class="auth-title">{{ title }}</h2>
+      <p class="auth-subtitle">Enter the OTP sent to <strong>{{ email }}</strong>.</p>
+    </div>
+    <form method="POST" action="{{ action_route }}" class="row g-3">
+      <div class="col-12">
+        <label class="form-label">6-digit OTP</label>
+        <input name="code" class="form-control auth-input" maxlength="6" placeholder="Enter code" required>
+      </div>
+      <div class="col-12 d-grid gap-2">
+        <button class="btn btn-primary auth-btn" type="submit" name="action" value="verify">Confirm</button>
+        <button class="btn btn-outline-secondary" type="submit" name="action" value="resend">Resend OTP</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
