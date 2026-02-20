@@ -232,13 +232,14 @@ def create_app():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
-        admin_emails = {e.strip().lower() for e in app.config.get("ADMIN_EMAILS", []) if e.strip()}
-        if admin_emails:
-            users = User.query.filter(User.email.in_(list(admin_emails))).all()
-            for user in users:
-                user.role = "admin"
-            if users:
-                db.session.commit()
+        if app.config.get("AUTO_ASSIGN_ADMIN_EMAILS", False):
+            admin_emails = {e.strip().lower() for e in app.config.get("ADMIN_EMAILS", []) if e.strip()}
+            if admin_emails:
+                users = User.query.filter(User.email.in_(list(admin_emails))).all()
+                for user in users:
+                    user.role = "admin"
+                if users:
+                    db.session.commit()
         bootstrap_email = app.config.get("ADMIN_BOOTSTRAP_EMAIL", "")
         bootstrap_password = app.config.get("ADMIN_BOOTSTRAP_PASSWORD", "")
         if bootstrap_email and bootstrap_password:
