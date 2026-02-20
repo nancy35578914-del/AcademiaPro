@@ -6,7 +6,7 @@
   {% if writer_enabled %}
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-      <h2 class="mb-1">Writer Dashboard</h2>
+      <h2 class="mb-1">Writer Dashboard <span class="badge text-bg-info align-middle">Writer Mode</span></h2>
       <p class="text-muted mb-0">Decision-ready view to reduce admin time and maximize writing time.</p>
     </div>
     <div class="d-flex gap-2">
@@ -196,7 +196,7 @@
         <div class="small mb-2"><strong>Bio:</strong> {{ writer_bio }}</div>
         <a href="{{ url_for('main.profile') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">Edit Profile</a>
         <a href="{{ url_for('main.writer_samples') }}" class="btn btn-outline-secondary btn-sm w-100 mb-2">Upload Samples</a>
-        <a href="{{ url_for('main.blog_manage') }}" class="btn btn-outline-dark btn-sm w-100">Manage Blog Posts</a>
+        <a href="{{ url_for('main.writer_blog_manage') }}" class="btn btn-outline-dark btn-sm w-100">Manage Blog Posts</a>
       </div>
 
       <div class="section-card mb-3">
@@ -221,97 +221,139 @@
   {% else %}
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-      <h2 class="mb-1">Client Command Center</h2>
-      <p class="text-muted mb-0">Instant visibility into progress, messages, and payments.</p>
+      <h2 class="mb-1">Client Dashboard</h2>
+      <p class="text-muted mb-0">Track orders, messages, payments, and account security from one place.</p>
     </div>
     <div class="d-flex gap-2">
-      <a href="{{ url_for('main.order') }}" class="btn btn-primary btn-sm">Place Order</a>
-      <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-primary btn-sm">Support Tickets</a>
-      <a href="{{ url_for('main.settings') }}" class="btn btn-outline-secondary btn-sm">Settings</a>
+      <a href="{{ url_for('main.order') }}" class="btn btn-warning btn-sm fw-semibold">Place Order</a>
+      <a href="{{ url_for('main.profile') }}" class="btn btn-outline-primary btn-sm">Profile</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <a href="{{ url_for('main.my_orders') }}" class="dash-card-link text-decoration-none">
+        <div class="tile-soft dash-stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="metric-value">{{ client_active_orders|length }}</div>
+              <div class="metric-label">Active Orders</div>
+            </div>
+            <i class="bi bi-journal-check fs-4 text-primary"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <a href="{{ url_for('main.my_orders') }}" class="dash-card-link text-decoration-none">
+        <div class="tile-soft dash-stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="metric-value">{{ client_completed_orders|length }}</div>
+              <div class="metric-label">Completed Orders</div>
+            </div>
+            <i class="bi bi-check2-circle fs-4 text-success"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <a href="{{ url_for('main.my_orders') }}" class="dash-card-link text-decoration-none">
+        <div class="tile-soft dash-stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="metric-value">{{ client_revision_orders|length }}</div>
+              <div class="metric-label">Pending Revisions</div>
+            </div>
+            <i class="bi bi-arrow-repeat fs-4 text-warning"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <a href="{{ url_for('main.notifications') }}" class="dash-card-link text-decoration-none">
+        <div class="tile-soft dash-stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="metric-value">{{ unread_count }}</div>
+              <div class="metric-label">Notifications</div>
+            </div>
+            <i class="bi bi-bell fs-4 text-danger"></i>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
 
   <div class="section-card mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <div class="text-muted small">Active Order Status</div>
-        {% if client_primary_order %}
-          <div class="fw-semibold">#{{ client_primary_order.id }} {{ client_primary_order.topic }}</div>
-          <div class="small text-muted">Due {{ client_primary_order.deadline.strftime('%Y-%m-%d') if client_primary_order.deadline else 'N/A' }}</div>
-        {% else %}
-          <div class="text-muted small">No active orders yet.</div>
-        {% endif %}
+      <h5 class="mb-0">Overview / Order Status</h5>
+      <a href="{{ url_for('main.my_orders') }}" class="btn btn-outline-primary btn-sm">Open Order List</a>
+    </div>
+    {% if client_primary_order %}
+    <div class="row g-3 mt-1">
+      <div class="col-lg-6">
+        <div class="small text-muted">Current Focus Order</div>
+        <div class="fw-semibold">#{{ client_primary_order.id }} {{ client_primary_order.topic }}</div>
+        <div class="small text-muted">Deadline: {{ client_primary_order.deadline.strftime('%Y-%m-%d %H:%M') if client_primary_order.deadline else 'N/A' }}</div>
+        <div class="small text-muted mt-1">Countdown: <span class="time-remaining" data-deadline="{{ client_primary_order.deadline.isoformat() if client_primary_order.deadline else '' }}">--</span></div>
       </div>
-      <div>
-        {% if client_primary_order %}
-          <div class="small text-muted">Progress</div>
-          <div class="progress" style="width: 220px; height: 8px;">
-            <div class="progress-bar bg-success" role="progressbar" style="width: {{ client_primary_progress }}%;" aria-valuenow="{{ client_primary_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
-          </div>
-          <div class="small text-muted mt-1">{{ client_primary_progress }}% complete</div>
-        {% endif %}
-      </div>
-      <div class="text-end">
-        {% if client_primary_order %}
-          <div class="small text-muted">Time remaining</div>
-          <div class="fw-semibold time-remaining" data-deadline="{{ client_primary_order.deadline.isoformat() if client_primary_order.deadline else '' }}">--</div>
-        {% endif %}
+      <div class="col-lg-6">
+        <div class="small text-muted mb-1">Completion Progress</div>
+        <div class="progress" style="height: 8px;">
+          <div class="progress-bar bg-success" role="progressbar" style="width: {{ client_primary_progress }}%;" aria-valuenow="{{ client_primary_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="small text-muted mt-1">{{ client_primary_progress }}% complete</div>
       </div>
     </div>
-
-    <div class="row g-3 mt-3">
-      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ client_active_orders|length }}</div><div class="metric-label">Active Orders</div></div></div>
-      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ client_completed_orders|length }}</div><div class="metric-label">Completed Orders</div></div></div>
-      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ client_revision_orders|length }}</div><div class="metric-label">Pending Revisions</div></div></div>
-      <div class="col-md-3"><div class="tile-soft"><div class="metric-value">{{ unread_count }}</div><div class="metric-label">Notifications</div></div></div>
-    </div>
+    {% else %}
+    <div class="text-muted small mt-2">No active orders yet.</div>
+    {% endif %}
   </div>
-
-  {% if writer_application and not writer_application.approved %}
-  <div class="alert alert-info">Your writer application is pending admin review.</div>
-  {% elif not writer_application %}
-  <div class="alert alert-secondary d-flex justify-content-between align-items-center">
-    <span>Want writer features? Apply to become a writer.</span>
-    <a href="{{ url_for('main.writer_apply') }}" class="btn btn-sm btn-primary">Apply Now</a>
-  </div>
-  {% endif %}
 
   <div class="row g-3 mb-4">
-    <div class="col-lg-8">
-      <div class="section-card mb-3">
-        <h5 class="mb-3">Order Management</h5>
+    <div class="col-12">
+      <div class="section-card">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h5 class="mb-0">Order Management</h5>
+          <a href="{{ url_for('main.order') }}" class="btn btn-primary btn-sm">New Order</a>
+        </div>
         {% if my_orders %}
         <div class="table-responsive">
           <table class="table align-middle">
-            <thead><tr><th>Topic</th><th>Status</th><th>Assigned Writer</th><th>Timeline</th><th>Actions</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Title</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th>Assigned Writer</th>
+                <th>Quick Actions</th>
+              </tr>
+            </thead>
             <tbody>
               {% for order in my_orders %}
+              {% set w = assigned_writer_map.get(order.id) %}
+              {% set order_status = (order.status or '')|lower %}
               <tr>
+                <td class="fw-semibold">#{{ order.id }}</td>
                 <td>{{ order.topic }}</td>
+                <td>
+                  <div class="small">{{ order.deadline.strftime('%Y-%m-%d %H:%M') if order.deadline else 'N/A' }}</div>
+                  <div class="small text-muted">Remaining: <span class="time-remaining" data-deadline="{{ order.deadline.isoformat() if order.deadline else '' }}">--</span></div>
+                </td>
                 <td><span class="badge bg-light text-dark">{{ order.status }}</span></td>
                 <td>
-                  {% set w = assigned_writer_map.get(order.id) %}
                   {% if w %}
                     {{ w.name }}
-                    <div class="small text-muted">Last active: Recently</div>
                   {% else %}
                     <span class="text-muted">Pending assignment</span>
                   {% endif %}
                 </td>
-                <td>
-                  <div class="timeline">
-                    <span class="step done">Assigned</span>
-                    <span class="step active">Draft</span>
-                    <span class="step">Revision</span>
-                    <span class="step">Complete</span>
-                  </div>
-                  <div class="small text-muted">Time remaining: <span class="time-remaining" data-deadline="{{ order.deadline.isoformat() if order.deadline else '' }}">--</span></div>
-                </td>
                 <td class="d-flex flex-column gap-1">
-                  <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-outline-primary btn-sm">Open Details</a>
-                  {% if w %}
-                    <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-outline-secondary btn-sm">Message Writer</a>
-                  {% endif %}
+                  <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-outline-secondary btn-sm">Request Revision</a>
+                  <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-outline-success btn-sm {% if order_status != 'completed' %}disabled{% endif %}">Approve Draft</a>
+                  <a href="{{ url_for('main.order_chat', order_id=order.id) }}#files" class="btn btn-outline-primary btn-sm">Download Paper</a>
                 </td>
               </tr>
               {% endfor %}
@@ -319,25 +361,32 @@
           </table>
         </div>
         {% else %}
-        <div class="text-muted">No orders yet.</div>
+        <div class="text-center py-4">
+          <p class="text-muted mb-2">No orders yet - Place your first order today!</p>
+          <a href="{{ url_for('main.order') }}" class="btn btn-warning btn-sm fw-semibold">Place Order</a>
+        </div>
         {% endif %}
       </div>
+    </div>
+  </div>
 
-      {% if not compact %}
+  <div class="row g-3 mb-4">
+    <div class="col-xl-8">
       <div class="section-card">
         <h5 class="mb-3">Communication Hub</h5>
         <div class="row g-3">
           <div class="col-md-6">
             <div class="small text-muted mb-2">System Alerts</div>
             {% if client_order_updates %}
-            <ul class="list-group list-group-flush">
+            <div class="d-flex flex-column gap-2">
               {% for n in client_order_updates %}
-              <li class="list-group-item px-0">
-                <div class="small">{{ n.content }}</div>
-                <div class="small text-muted">{{ n.timestamp.strftime('%Y-%m-%d %H:%M') if n.timestamp else '' }}</div>
-              </li>
+              {% set tone = 'alert-success' if 'completed' in (n.content or '')|lower else ('alert-danger' if 'urgent' in (n.content or '')|lower else 'alert-warning') %}
+              <div class="alert {{ tone }} py-2 px-3 mb-0">
+                <div class="small fw-semibold">{{ n.content }}</div>
+                <div class="small">{{ n.timestamp.strftime('%Y-%m-%d %H:%M') if n.timestamp else '' }}</div>
+              </div>
               {% endfor %}
-            </ul>
+            </div>
             {% else %}
             <div class="text-muted small">No system alerts yet.</div>
             {% endif %}
@@ -345,94 +394,163 @@
           <div class="col-md-6">
             <div class="small text-muted mb-2">Direct Messages</div>
             {% if client_direct_messages %}
-            <ul class="list-group list-group-flush">
+            <div class="d-flex flex-column gap-2">
               {% for n in client_direct_messages %}
-              <li class="list-group-item px-0">
+              <div class="border rounded p-2">
                 <div class="small">{{ n.content }}</div>
                 <div class="small text-muted">{{ n.timestamp.strftime('%Y-%m-%d %H:%M') if n.timestamp else '' }}</div>
-              </li>
+              </div>
               {% endfor %}
-            </ul>
+            </div>
             {% else %}
             <div class="text-muted small">No direct messages yet.</div>
             {% endif %}
           </div>
         </div>
-        <div class="d-flex gap-2 flex-wrap mt-3">
-          <a href="{{ url_for('main.notifications') }}" class="btn btn-outline-secondary btn-sm">Order Notifications</a>
-          <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-primary btn-sm">Contact Admin Support</a>
-        </div>
-        {% if support_chat_enabled %}
+
         <hr>
-        <div class="small text-muted mb-2">Live Chat with Admin</div>
-        <div id="supportChatLog" class="border rounded p-2 mb-2 bg-light" style="height: 180px; overflow-y: auto;"></div>
-        <div class="input-group input-group-sm">
-          <input id="supportChatInput" class="form-control" placeholder="Type message to admin">
-          <button id="supportChatSend" class="btn btn-primary" type="button">Send</button>
+        <div class="small text-muted mb-2">Order Notifications Tracker</div>
+        <div class="d-flex flex-column gap-2">
+          {% for order in my_orders[:4] %}
+          {% set status_value = (order.status or '')|lower %}
+          <div class="border rounded p-2">
+            <div class="small fw-semibold mb-1">Order #{{ order.id }} - {{ order.topic }}</div>
+            <div class="timeline">
+              <span class="step {% if status_value in ['pending', 'open', 'in progress', 'revision', 'completed'] %}done{% endif %}">Submitted</span>
+              <span class="step {% if status_value in ['in progress', 'revision', 'completed'] %}done{% elif status_value == 'open' %}active{% endif %}">In Progress</span>
+              <span class="step {% if status_value in ['revision', 'completed'] %}done{% elif status_value == 'in progress' %}active{% endif %}">Draft</span>
+              <span class="step {% if status_value == 'revision' %}active{% elif status_value == 'completed' %}done{% endif %}">Revision</span>
+              <span class="step {% if status_value == 'completed' %}done{% endif %}">Completed</span>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-muted small">No tracked orders yet.</div>
+          {% endfor %}
         </div>
-        {% endif %}
+
+        <hr>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <div class="small text-muted mb-0">Live Chat with Admin</div>
+          <span class="badge {% if admin_availability == 'Online' %}bg-success{% else %}bg-secondary{% endif %}">{{ admin_availability }}</span>
+        </div>
+        <div id="supportChatLog" class="border rounded p-2 mb-2 bg-light" style="height: 200px; overflow-y: auto;"></div>
+        <div class="input-group input-group-sm mb-2">
+          <input id="supportChatInput" class="form-control" placeholder="Type message to admin" {% if admin_availability != 'Online' %}disabled{% endif %}>
+          <button id="supportChatSend" class="btn btn-primary" type="button" {% if admin_availability != 'Online' %}disabled{% endif %}>Send</button>
+        </div>
+        <div class="input-group input-group-sm">
+          <input id="supportChatFile" type="file" class="form-control" {% if admin_availability != 'Online' %}disabled{% endif %}>
+          <button id="supportChatAttach" class="btn btn-outline-secondary" type="button" {% if admin_availability != 'Online' %}disabled{% endif %}>Attach</button>
+        </div>
       </div>
-      {% endif %}
     </div>
 
-    <div class="col-lg-4">
+    <div class="col-xl-4">
       <div class="section-card mb-3">
         <h5 class="mb-3">Payment & Billing</h5>
-        <div class="small mb-1">Escrowed: <strong>${{ client_pending_payments|length * 50 }}</strong></div>
-        <div class="small mb-1">Released: <strong>${{ client_payments|length * 30 }}</strong></div>
-        <div class="small mb-2">Refunds: <strong>{{ client_refunds|length }}</strong></div>
-        <button class="btn btn-outline-dark btn-sm w-100 mb-2" disabled>Payment Methods (Card/PayPal/Mobile Money)</button>
-        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Download Invoices (Coming Soon)</button>
+        <div class="small mb-1">Current Balance: <strong>${{ current_balance }}</strong></div>
+        <div class="small mb-2">Refunded Amount: <strong>${{ refunded_amount }}</strong></div>
+        <div class="d-grid gap-2 mb-3">
+          <button class="btn btn-outline-dark btn-sm">Payment Methods</button>
+          <button class="btn btn-outline-secondary btn-sm">Download Invoice</button>
+          <a href="{{ url_for('main.my_orders') }}" class="btn btn-outline-primary btn-sm">Order History</a>
+        </div>
+        <div class="small text-muted mb-2">Transaction Timeline</div>
+        <div class="d-flex flex-column gap-2">
+          {% for p in client_payments[:5] %}
+          <div class="border rounded p-2">
+            <div class="small fw-semibold">${{ p.amount or 0 }} - {{ p.status }}</div>
+            <div class="small text-muted">{{ p.method or 'N/A' }} | {{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at else '' }}</div>
+          </div>
+          {% else %}
+          <div class="text-muted small">No transactions yet.</div>
+          {% endfor %}
+        </div>
       </div>
 
-      {% if not compact %}
       <div class="section-card mb-3">
         <h5 class="mb-3">Profile Management</h5>
         <div class="small mb-1"><strong>Name:</strong> {{ current_user.name }}</div>
         <div class="small mb-1"><strong>Email:</strong> {{ current_user.email }}</div>
-        <div class="small mb-1"><strong>Open Tickets:</strong> {{ open_tickets }}</div>
-        <a href="{{ url_for('main.profile') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">Edit Profile</a>
+        <div class="small mb-1"><strong>Academic Level:</strong> {{ current_user.academic_level or 'Not set' }}</div>
+        <div class="small mb-2"><strong>Open Tickets:</strong> {{ open_tickets }}</div>
+        <div class="small text-muted mb-2">Ticket Status</div>
+        <div class="timeline mb-2">
+          <span class="step">Open: {{ ticket_status_counts.get('open', 0) }}</span>
+          <span class="step">Resolved: {{ ticket_status_counts.get('resolved', 0) }}</span>
+          <span class="step">Closed: {{ ticket_status_counts.get('closed', 0) }}</span>
+        </div>
+        <a href="{{ url_for('main.profile') }}" class="btn btn-outline-primary btn-sm w-100">Edit Profile</a>
       </div>
+    </div>
+  </div>
 
-      <div class="section-card mb-3">
+  <div class="row g-3 mb-4">
+    <div class="col-xl-7">
+      <div class="section-card h-100">
         <h5 class="mb-3">Resources & Extras</h5>
-        <div class="small text-muted mb-2">Recommended samples</div>
-        <div class="d-grid gap-2 mb-3">
-          <a class="btn btn-outline-dark btn-sm" href="{{ url_for('main.Samples') }}?q={{ (client_primary_order.topic if client_primary_order else '')|urlencode }}">Samples for your topic</a>
-          <a class="btn btn-outline-dark btn-sm" href="{{ url_for('main.public_blogs') }}">Blog & Study Resources</a>
+        <div class="small text-muted mb-2">Samples Library</div>
+        <div class="row g-2 mb-3">
+          {% for sample in featured_samples %}
+          <div class="col-md-6">
+            <a href="{{ url_for('main.sample_detail', sample_id=sample.id) }}" class="dash-card-link text-decoration-none">
+              <div class="border rounded p-2 h-100">
+                <div class="small fw-semibold">{{ sample.title }}</div>
+                <div class="small text-muted">{{ sample.subject or 'General' }} | {{ sample.level or 'All levels' }}</div>
+              </div>
+            </a>
+          </div>
+          {% else %}
+          <div class="col-12"><div class="text-muted small">No samples available right now.</div></div>
+          {% endfor %}
         </div>
+
+        <div class="small text-muted mb-2">Blog Highlights</div>
+        <div class="row g-2 mb-3">
+          {% for post in featured_blogs %}
+          <div class="col-md-6">
+            <a href="{{ url_for('main.blog_detail', id=post.id) }}" class="dash-card-link text-decoration-none">
+              <div class="border rounded p-2 h-100">
+                <div class="resource-thumb mb-2"><i class="bi bi-journal-richtext"></i></div>
+                <div class="small fw-semibold">{{ post.title }}</div>
+              </div>
+            </a>
+          </div>
+          {% else %}
+          <div class="col-12"><div class="text-muted small">No featured articles yet.</div></div>
+          {% endfor %}
+        </div>
+
         <div class="referral-card">
-          <div class="fw-semibold">Refer a Friend</div>
-          <div class="small text-muted mb-2">Earn credits for each referred order.</div>
-          <button class="btn btn-primary btn-sm w-100" disabled>Get Referral Link (Coming Soon)</button>
+          <div class="fw-semibold mb-1">Referral Program</div>
+          <div class="small text-muted mb-2">Share your link and earn credits on referred orders.</div>
+          <div class="input-group input-group-sm mb-2">
+            <input id="referralLinkInput" class="form-control" value="{{ referral_link }}" readonly>
+            <button id="copyReferralBtn" class="btn btn-primary" type="button">Copy</button>
+          </div>
+          <a href="{{ url_for('main.register') }}" class="btn btn-outline-primary btn-sm w-100">Open Referral Signup</a>
         </div>
       </div>
-      {% endif %}
-
-      <div class="section-card">
+    </div>
+    <div class="col-xl-5">
+      <div class="section-card h-100">
         <h5 class="mb-3">Settings & Security</h5>
         <a href="{{ url_for('main.settings') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">Password & Preferences</a>
-        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Enable Two-Factor Authentication (Coming Soon)</button>
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="twoFactorToggle" {% if current_user.two_factor_enabled %}checked{% endif %} disabled>
+          <label class="form-check-label small" for="twoFactorToggle">Two-Factor Authentication</label>
+        </div>
+        <div class="small text-muted mb-3">Enable or disable 2FA from account settings.</div>
+
+        <div class="small text-muted mb-2">Privacy Controls</div>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-secondary btn-sm">Download Personal Data (GDPR)</a>
+          <a href="{{ url_for('main.support_tickets') }}" class="btn btn-outline-danger btn-sm">Delete Personal Data Request</a>
+        </div>
       </div>
     </div>
   </div>
 
-  {% if not compact %}
-  <div class="section-card">
-    <button class="btn btn-link p-0 fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#workflowCollapse">
-      How it Works
-    </button>
-    <div id="workflowCollapse" class="collapse mt-2">
-      <ol class="mb-0">
-        <li>Client submits order and deposit. Admin verifies and assigns a writer.</li>
-        <li>Writer works on the order, chats with client, and uploads drafts/final work.</li>
-        <li>Client requests revisions or approves completion.</li>
-        <li>For disputes, client raises support ticket; admin mediates and resolves.</li>
-        <li>Admin controls payment release, refunds, quality checks, and writer performance.</li>
-      </ol>
-    </div>
-  </div>
-  {% endif %}
   {% endif %}
 </div>
 
@@ -498,6 +616,10 @@
   const supportLog = document.getElementById("supportChatLog");
   const supportInput = document.getElementById("supportChatInput");
   const supportSend = document.getElementById("supportChatSend");
+  const supportFile = document.getElementById("supportChatFile");
+  const supportAttach = document.getElementById("supportChatAttach");
+  const referralInput = document.getElementById("referralLinkInput");
+  const copyReferralBtn = document.getElementById("copyReferralBtn");
   let supportPoll = null;
   function esc(v) {
     return String(v || "")
@@ -521,7 +643,12 @@
       supportLog.innerHTML = rows.map((m) => {
         const align = m.from_admin ? "text-start" : "text-end";
         const cls = m.from_admin ? "bg-secondary" : "bg-primary";
-        return `<div class="mb-1 ${align}"><span class="badge ${cls} p-2">${esc(m.content)}</span><div class="small text-muted">${esc(m.timestamp)}</div></div>`;
+        const textPart = m.content ? `<span class="badge ${cls} p-2">${esc(m.content)}</span>` : "";
+        const files = (m.attachments || []).map((a) => {
+          const href = String(a.url || "#");
+          return `<div><a class="small" href="${href}" target="_blank" rel="noopener">${esc(a.filename)}</a></div>`;
+        }).join("");
+        return `<div class="mb-1 ${align}">${textPart}${files}<div class="small text-muted">${esc(m.timestamp)}</div></div>`;
       }).join("");
       supportLog.scrollTop = supportLog.scrollHeight;
     } catch (_e) {}
@@ -541,6 +668,29 @@
       refreshSupportChat();
     } catch (_e) {}
   }
+  async function attachSupportFileName() {
+    if (!supportFile || !supportInput || !supportSend) return;
+    if (!supportFile.files || !supportFile.files.length) return;
+    const selected = supportFile.files[0];
+    const form = new FormData();
+    form.append("file", selected);
+    try {
+      supportAttach.disabled = true;
+      const res = await fetch("{{ url_for('main.support_chat_upload') }}", {
+        method: "POST",
+        body: form
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return;
+      const marker = `[SupportAttachment:${data.filename}]`;
+      supportInput.value = supportInput.value.trim() ? `${supportInput.value.trim()} ${marker}` : marker;
+      await sendSupportMessage();
+      supportFile.value = "";
+    } catch (_e) {
+    } finally {
+      supportAttach.disabled = false;
+    }
+  }
   if (supportLog) {
     refreshSupportChat();
     supportPoll = setInterval(refreshSupportChat, 5000);
@@ -554,6 +704,18 @@
         e.preventDefault();
         sendSupportMessage();
       }
+    });
+  }
+  if (supportAttach) {
+    supportAttach.addEventListener("click", attachSupportFileName);
+  }
+  if (copyReferralBtn && referralInput) {
+    copyReferralBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(referralInput.value);
+        copyReferralBtn.textContent = "Copied";
+        setTimeout(() => { copyReferralBtn.textContent = "Copy"; }, 1200);
+      } catch (_e) {}
     });
   }
 </script>

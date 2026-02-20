@@ -7,77 +7,190 @@
 
 <div class="admin-card p-3 mb-3">
   <form method="GET" class="row g-2 align-items-end">
-    <div class="col-md-5">
+    <div class="col-lg-4 col-md-6">
       <label class="form-label">Search</label>
       <input class="form-control" name="q" value="{{ q }}" placeholder="Name, email, subject">
     </div>
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
       <label class="form-label">Status</label>
       <select name="status" class="form-select">
         <option value="">All</option>
         <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
         <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>Rejected</option>
       </select>
     </div>
-    <div class="col-md-4 d-flex gap-2">
-      <button class="btn btn-primary w-100">Filter</button>
+    <div class="col-lg-3 col-md-6">
+      <label class="form-label">Subject Expertise</label>
+      <select name="subject" class="form-select">
+        <option value="">All Subjects</option>
+        {% for item in subject_options %}
+          <option value="{{ item }}" {% if subject == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-2 col-md-6 d-flex gap-2">
+      <button class="btn btn-primary w-100" type="submit">Filter</button>
       <a class="btn btn-outline-secondary" href="{{ url_for('main.admin_writers') }}">Reset</a>
     </div>
   </form>
 </div>
 
-<div class="row g-3">
+<div class="row g-3 mb-3">
   <div class="col-lg-6">
-    <div class="admin-card p-3 h-100">
-      <h2 class="h5">Approved Writer Profiles</h2>
-      <div class="table-responsive">
-        <table class="table align-middle">
-          <thead><tr><th>Name</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {% for writer in writers %}
-            <tr>
-              <td>{{ writer.name }}</td>
-              <td>{{ writer.subject }}</td>
-              <td>{% if writer.approved %}<span class="badge bg-success">Approved</span>{% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}</td>
-              <td>
-                {% if not writer.approved %}<a href="{{ url_for('main.approve_writer', id=writer.id) }}" class="btn btn-sm btn-success">Approve</a>{% endif %}
-                <a href="{{ url_for('main.delete_writer', id=writer.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete writer?')">Delete</a>
-              </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" class="text-muted">No writers found.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <div class="alert alert-warning mb-0">Pending Applications Alert: You have <strong>{{ pending_applications_count }}</strong> new applications awaiting review.</div>
   </div>
-
   <div class="col-lg-6">
-    <div class="admin-card p-3 h-100">
-      <h2 class="h5">User Applications</h2>
-      <div class="table-responsive">
-        <table class="table align-middle">
-          <thead><tr><th>Name</th><th>Email</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {% for app in applications %}
-            <tr>
-              <td>{{ app.name }}</td>
-              <td>{{ app.email }}</td>
-              <td>{{ app.subject }}</td>
-              <td>{% if app.approved %}<span class="badge bg-success">Approved</span>{% else %}<span class="badge bg-secondary">Pending</span>{% endif %}</td>
-              <td>
-                <a href="{{ url_for('main.approve_application', id=app.id) }}" class="btn btn-sm btn-success">Approve</a>
-                <a href="{{ url_for('main.reject_application', id=app.id) }}" class="btn btn-sm btn-outline-danger">Reject</a>
-              </td>
-            </tr>
+    <div class="alert alert-info mb-0">Inactive Writers Alert: <strong>{{ inactive_writer_count }}</strong> writers have not been active in 30+ days.</div>
+  </div>
+</div>
+
+<div class="admin-card p-3 mb-3">
+  <h2 class="h5 mb-3">Approved Writer Profiles</h2>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Subject Expertise</th>
+          <th>Rating</th>
+          <th>Completed Orders</th>
+          <th>Last Active</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for writer in writers %}
+        {% set perf = writer_ratings.get(writer.id) %}
+        {% set last_active = writer_last_active.get(writer.id) %}
+        {% set active_recent = last_active and ((now_utc - last_active).days < 30) %}
+        <tr>
+          <td>{{ writer.name }}</td>
+          <td>{{ writer.subject or 'General' }}</td>
+          <td>
+            {% if perf %}
+              ? {{ '%.1f'|format(perf.avg) }}/5
+              <div class="small text-muted">{{ perf.count }} reviews</div>
             {% else %}
-            <tr><td colspan="5" class="text-muted">No applications submitted yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+              <span class="text-muted">No ratings</span>
+            {% endif %}
+          </td>
+          <td>{{ writer_completed_orders.get(writer.id, 0) }}</td>
+          <td>{{ last_active.strftime('%Y-%m-%d %H:%M') if last_active else 'No activity yet' }}</td>
+          <td>
+            {% if not writer.approved %}
+              <span class="badge bg-secondary">Suspended</span>
+            {% elif active_recent %}
+              <span class="badge bg-success">Active</span>
+            {% else %}
+              <span class="badge bg-primary">Approved</span>
+            {% endif %}
+          </td>
+          <td class="d-flex gap-1 flex-wrap">
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#writer-{{ writer.id }}">View Profile</button>
+            {% if writer.approved %}
+              <a href="{{ url_for('main.suspend_writer', id=writer.id) }}" class="btn btn-sm btn-outline-warning">Suspend</a>
+            {% else %}
+              <a href="{{ url_for('main.approve_writer', id=writer.id) }}" class="btn btn-sm btn-success">Activate</a>
+            {% endif %}
+            <a href="{{ url_for('main.delete_writer', id=writer.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete writer?')">Delete</a>
+          </td>
+        </tr>
+        <tr class="collapse" id="writer-{{ writer.id }}">
+          <td colspan="7" class="bg-body-tertiary">
+            <div class="small mb-1"><strong>Degree:</strong> {{ writer.degree or 'Not provided' }}</div>
+            <div class="small mb-1"><strong>Experience:</strong> {{ writer.years_experience if writer.years_experience is not none else 'Not specified' }} years</div>
+            <div class="small mb-1"><strong>Portfolio URL:</strong>
+              {% if writer.portfolio_url %}
+                <a href="{{ writer.portfolio_url }}" target="_blank" rel="noopener">Open Link</a>
+              {% else %}
+                Not provided
+              {% endif %}
+            </div>
+            <div class="small mb-1"><strong>Portfolio File:</strong>
+              {% if writer.portfolio_file %}
+                <a href="{{ url_for('static', filename='uploads/' ~ writer.portfolio_file) }}" target="_blank">Open File</a>
+              {% else %}
+                Not provided
+              {% endif %}
+            </div>
+            <div class="small mb-0"><strong>Resume:</strong>
+              {% if writer.resume_file %}
+                <a href="{{ url_for('static', filename='uploads/' ~ writer.resume_file) }}" target="_blank">Open CV</a>
+              {% else %}
+                Not provided
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted">No writers found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="admin-card p-3">
+  <h2 class="h5 mb-3">User Applications</h2>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Subject Expertise</th>
+          <th>Status</th>
+          <th>Test Score</th>
+          <th>Date Applied</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr id="application-{{ app.id }}">
+          <td>{{ app.name }}</td>
+          <td>{{ app.email }}</td>
+          <td>{{ app.subject }}</td>
+          <td>
+            {% if app.approved is sameas true %}
+              <span class="badge bg-success">Approved</span>
+            {% elif app.id in rejected_application_ids %}
+              <span class="badge bg-danger">Rejected</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set score = application_test_scores.get(app.id) %}
+            {% if score is not none %}{{ score }}%{% else %}<span class="text-muted">N/A</span>{% endif %}
+          </td>
+          <td>{{ app.created_at.strftime('%Y-%m-%d %H:%M') if app.created_at else '' }}</td>
+          <td class="d-flex gap-1 flex-wrap">
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#review-{{ app.id }}">Review Application</button>
+            <a href="{{ url_for('main.approve_application', id=app.id) }}" class="btn btn-sm btn-success">Approve</a>
+            <a href="{{ url_for('main.reject_application', id=app.id) }}" class="btn btn-sm btn-outline-danger">Reject</a>
+          </td>
+        </tr>
+        <tr class="collapse" id="review-{{ app.id }}">
+          <td colspan="7" class="bg-body-tertiary">
+            <div class="small mb-1"><strong>Bio:</strong> {{ (app.bio or 'No bio provided.').replace('[REJECTED]', '').strip() }}</div>
+            <div class="small mb-1"><strong>Writing Styles:</strong> {{ app.writing_styles or 'Not specified' }}</div>
+            <div class="small mb-1"><strong>Education:</strong> {{ app.education_level or 'Not specified' }}</div>
+            <div class="small mb-2"><strong>Experience:</strong> {{ app.years_experience if app.years_experience is not none else 'Not specified' }} years</div>
+            {% if app.portfolio_file %}
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('static', filename='uploads/' ~ app.portfolio_file) }}" target="_blank">Open CV/Sample</a>
+            {% else %}
+              <span class="small text-muted">No CV/Sample uploaded.</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted">No applications submitted yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

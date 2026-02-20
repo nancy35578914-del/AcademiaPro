@@ -16,6 +16,9 @@
       <div class="mb-3">
         {{ form.password.label(class="form-label fw-semibold") }}
         {{ form.password(class="form-control auth-input", placeholder="Enter password") }}
+        <div class="text-end mt-1">
+          <a class="small" href="{{ url_for('main.forgot_password') }}">Forgot password?</a>
+        </div>
       </div>
       {{ form.submit(class="btn btn-primary w-100 auth-btn") }}
     </form>

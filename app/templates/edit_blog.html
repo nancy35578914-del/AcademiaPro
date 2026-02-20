@@ -35,7 +35,7 @@
       <label class="form-check-label" for="is_published">Published</label>
     </div>
     <button type="submit" class="btn btn-primary">Update</button>
-    <a href="{{ url_for('main.blog_manage') }}" class="btn btn-secondary">Cancel</a>
+    <a href="{{ url_for('main.blog_manage', scope=manage_scope) }}" class="btn btn-secondary">Cancel</a>
   </form>
 </div>
 {% endblock %}

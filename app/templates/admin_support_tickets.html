@@ -8,7 +8,7 @@
       <thead><tr><th>ID</th><th>User</th><th>Order</th><th>Subject</th><th>Priority</th><th>Status</th><th>Message</th><th>Action</th></tr></thead>
       <tbody>
       {% for t in tickets %}
-      <tr>
+      <tr id="ticket-{{ t.id }}">
         <td>#{{ t.id }}</td>
         <td>{{ ticket_users.get(t.user_id).name if ticket_users.get(t.user_id) else ('User #' ~ t.user_id) }}</td>
         <td>{% if t.order_id %}#{{ t.order_id }}{% else %}-{% endif %}</td>
@@ -38,3 +38,4 @@
   {% endif %}
 </div>
 {% endblock %}
+

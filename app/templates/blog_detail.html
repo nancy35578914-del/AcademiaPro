@@ -12,6 +12,13 @@
         {% if blog.cluster_topic %}<span class="badge bg-light text-dark border">{{ blog.cluster_topic }}</span>{% endif %}
       </div>
       <p class="small text-muted">By {{ blog.author_name or 'AcademicPro Team' }}</p>
+      {% if official_links %}
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        {% for label, href in official_links %}
+        <a href="{{ href }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">{{ label }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
       <hr>
       <div class="mt-4">
         <p style="white-space: pre-line;">{{ blog.content }}</p>
@@ -19,7 +26,7 @@
 
       <div class="mt-5">
         <a href="{{ url_for('main.blog_list') }}" class="btn btn-outline-secondary btn-sm">
-          ? Back to Blog
+          Back to Blog
         </a>
       </div>
     </div>

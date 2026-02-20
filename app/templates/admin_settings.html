@@ -46,5 +46,73 @@
       </form>
     </div>
   </div>
+
+  <div class="col-12">
+    <div class="admin-card p-3">
+      <h2 class="h5 mb-3">Homepage Writer Recruitment Section</h2>
+      <form method="POST" class="row g-3">
+        <input type="hidden" name="form_type" value="writer_recruitment">
+        <div class="col-md-6">
+          <label class="form-label">Headline</label>
+          <input type="text" name="writer_recruit_headline" class="form-control" value="{{ settings['writer_recruit_headline'] }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">CTA Text</label>
+          <input type="text" name="writer_recruit_cta_text" class="form-control" value="{{ settings['writer_recruit_cta_text'] }}" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Subtext</label>
+          <textarea name="writer_recruit_subtext" rows="3" class="form-control" required>{{ settings['writer_recruit_subtext'] }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Benefits (one per line)</label>
+          <textarea name="writer_recruit_benefits" rows="6" class="form-control">{{ settings['writer_recruit_benefits'] }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Registration Steps (one per line)</label>
+          <textarea name="writer_recruit_steps" rows="6" class="form-control">{{ settings['writer_recruit_steps'] }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Requirements / Considerations (one per line)</label>
+          <textarea name="writer_recruit_considerations" rows="6" class="form-control">{{ settings['writer_recruit_considerations'] }}</textarea>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Writer Testimonial</label>
+          <textarea name="writer_recruit_testimonial" rows="2" class="form-control">{{ settings['writer_recruit_testimonial'] }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Testimonial Author</label>
+          <input type="text" name="writer_recruit_testimonial_author" class="form-control" value="{{ settings['writer_recruit_testimonial_author'] }}">
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Save Recruitment Section</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="admin-card p-3">
+      <h2 class="h5 mb-3">Writer Screening Quiz Settings</h2>
+      <form method="POST" class="row g-3">
+        <input type="hidden" name="form_type" value="writer_quiz">
+        <div class="col-md-3">
+          <label class="form-label">Pass Mark (%)</label>
+          <input type="number" name="writer_quiz_pass_mark" min="1" max="100" class="form-control" value="{{ settings['writer_quiz_pass_mark'] }}" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Quiz Rows (one per line)</label>
+          <textarea name="writer_quiz_items" rows="8" class="form-control" required>{{ settings['writer_quiz_items'] }}</textarea>
+          <div class="form-text">
+            Format each row exactly as:
+            <code>Question|Option A|Option B|Option C|correct_letter(a/b/c)</code>
+          </div>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Save Quiz Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

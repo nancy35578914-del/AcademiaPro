@@ -2,11 +2,12 @@
 {% block title %}AcademicPro - Home{% endblock %}
 {% block content %}
 <section class="home-hero text-center py-5">
-  <h1 class="display-5 fw-bold">Expert Academic Support, Anytime You Need It</h1>
-  <p class="lead text-muted">Fast, affordable, and confidential writing help for students worldwide.</p>
+  <h1 class="display-5 fw-bold">Explore AcademicPro - Trusted Academic Support</h1>
+  <p class="lead text-muted">Discover expert writing services, free learning resources, and a secure academic workflow.</p>
   <div class="d-flex justify-content-center gap-2 flex-wrap">
-    <a href="{{ url_for('main.order') }}" class="btn btn-primary btn-lg">Order Now</a>
-    <a href="{{ url_for('main.public_writers') }}" class="btn btn-outline-primary btn-lg">View Writers</a>
+    <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg">Sign Up</a>
+    <a href="{{ url_for('main.order') }}" class="btn btn-warning btn-lg">Place Order</a>
+    <a href="{{ url_for('main.writer_apply') }}" class="btn btn-outline-primary btn-lg">Apply as Writer</a>
   </div>
 </section>
 
@@ -28,92 +29,235 @@
   </div>
 </section>
 
-<section class="mb-5">
-  <h2 class="section-title text-center">How It Works</h2>
-  <div class="section-card">
+<section class="home-structured-block mb-5">
+  <div class="home-structured-shell">
+    <h2 class="section-title text-center mb-2">How It Works</h2>
+    <p class="text-center text-muted mb-4">A transparent process designed for secure delivery and clear communication.</p>
+    <div class="how-timeline">
+      <article class="how-step-card">
+        <div class="how-step-icon"><i class="bi bi-file-earmark-text"></i></div>
+        <h5>Submit Instructions</h5>
+        <p>Share your topic, academic level, citation style, and deadline with full requirements.</p>
+        <div class="small text-muted">Clear briefs lead to faster, stronger drafts.</div>
+      </article>
+      <article class="how-step-card">
+        <div class="how-step-icon"><i class="bi bi-shield-check"></i></div>
+        <h5>Admin Review</h5>
+        <p>Every order is checked and matched to a qualified writer by subject expertise.</p>
+        <div class="small text-muted">Quality and fit are verified before work starts.</div>
+      </article>
+      <article class="how-step-card">
+        <div class="how-step-icon"><i class="bi bi-lock"></i></div>
+        <h5>Secure Deposit</h5>
+        <p>Payment is held under platform rules while your task progresses.</p>
+        <div class="small text-muted">Safe escrow-style handling protects both sides.</div>
+      </article>
+      <article class="how-step-card">
+        <div class="how-step-icon"><i class="bi bi-chat-dots"></i></div>
+        <h5>Live Collaboration</h5>
+        <p>Use built-in chat to clarify details, review updates, and guide the outcome.</p>
+        <div class="small text-muted">Everything stays in one organized workspace.</div>
+      </article>
+      <article class="how-step-card">
+        <div class="how-step-icon"><i class="bi bi-check-circle"></i></div>
+        <h5>Review & Release</h5>
+        <p>Approve the final paper or request revision before payment is released.</p>
+        <div class="small text-muted">Completion is controlled by your satisfaction.</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="home-structured-block home-structured-block-alt mb-5" id="services">
+  <div class="home-structured-shell">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h2 class="section-title mb-0">Our Services</h2>
+      <a href="{{ url_for('main.services_page') }}" class="btn btn-outline-primary">Explore All Services</a>
+    </div>
     <div class="row g-3">
-      <div class="col-lg-4">
-        <div class="list-group" id="flowNav" role="tablist">
-          <button class="list-group-item list-group-item-action active" data-flow="step1">
-            1. Submit Instructions
-            <div class="small text-muted">Topic, level, word count, deadline</div>
-          </button>
-          <button class="list-group-item list-group-item-action" data-flow="step2">
-            2. Admin Review & Writer Match
-            <div class="small text-muted">Quality and expertise alignment</div>
-          </button>
-          <button class="list-group-item list-group-item-action" data-flow="step3">
-            3. Secure Deposit
-            <div class="small text-muted">Escrow-style payment confirmation</div>
-          </button>
-          <button class="list-group-item list-group-item-action" data-flow="step4">
-            4. Live Collaboration
-            <div class="small text-muted">Client ↔ writer chat during progress</div>
-          </button>
-          <button class="list-group-item list-group-item-action" data-flow="step5">
-            5. Review, Revision, Release
-            <div class="small text-muted">Finalize quality then release payment</div>
-          </button>
+      <div class="col-md-6 col-lg-3">
+        <div class="service-card h-100">
+          <div class="service-icon"><i class="bi bi-journal-text"></i></div>
+          <h5>Essay Writing</h5>
+          <p>Narrative, persuasive, and analytical essays tailored to your academic level and rubric.</p>
         </div>
       </div>
-      <div class="col-lg-8">
-        <div id="flowDetail" class="how-card h-100">
-          <h5 id="flowTitle">Submit Instructions</h5>
-          <p id="flowBody" class="mb-2">Provide complete instructions with topic, academic level, citation style, deadline, and required sources. The clearer your brief, the faster and better your first draft.</p>
-          <ul id="flowBullets" class="small text-muted mb-0">
-            <li>Attach rubric, reference materials, and formatting notes.</li>
-            <li>Set your timezone to avoid deadline confusion.</li>
-            <li>Use the live calculator for transparent pricing.</li>
-          </ul>
+      <div class="col-md-6 col-lg-3">
+        <div class="service-card h-100">
+          <div class="service-icon"><i class="bi bi-bar-chart-line"></i></div>
+          <h5>Research Papers</h5>
+          <p>Evidence-based papers with credible sources, proper citations, and plagiarism-free originality.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="service-card h-100">
+          <div class="service-icon"><i class="bi bi-mortarboard"></i></div>
+          <h5>Dissertations</h5>
+          <p>Comprehensive support from proposal design and methodology to final review and defense prep.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="service-card h-100">
+          <div class="service-icon"><i class="bi bi-check2-square"></i></div>
+          <h5>Assignments</h5>
+          <p>Reliable help for coursework, problem-solving tasks, and case studies across disciplines.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="mb-5" id="services">
-  <h2 class="section-title">Our Services</h2>
-  <div class="row g-3">
-    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Essay Writing</h5><p>Narrative, persuasive, analytical, and more.</p></div></div>
-    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Research Papers</h5><p>In-depth, well-cited academic research.</p></div></div>
-    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Dissertations</h5><p>Comprehensive support for advanced projects.</p></div></div>
-    <div class="col-md-6 col-lg-3"><div class="writer-card h-100"><h5>Assignments</h5><p>Reliable help for coursework and homework.</p></div></div>
+<section class="home-structured-block mb-5" id="writers">
+  <div class="home-structured-shell">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h2 class="section-title mb-0">Meet Our Writers</h2>
+      <a href="{{ url_for('main.public_writers') }}" class="btn btn-primary">View Writers</a>
+    </div>
+    <div class="row g-3">
+      {% if writers %}
+        {% for w in writers %}
+          {% set safe_rating = w.rating if w.rating and w.rating > 0 else 4.8 %}
+          {% set safe_reviews = review_counts.get(w.id, 0) if review_counts.get(w.id, 0) > 0 else 25 %}
+          <div class="col-md-6 col-lg-4">
+            <div class="writer-profile-card h-100">
+              <div class="writer-profile-head">
+                <img src="{{ url_for('static', filename='img/writer-photo.png') }}" alt="{{ w.name }} profile" class="writer-profile-avatar">
+                <div>
+                  <h5 class="mb-0">{{ w.name }}</h5>
+                  <div class="small text-muted">{{ w.subject or 'Academic Specialist' }}</div>
+                </div>
+              </div>
+              <div class="writer-rating-line">
+                <span class="stars">★★★★☆</span>
+                <span class="small">{{ '%.1f'|format(safe_rating) }}/5</span>
+                <span class="small text-muted">({{ safe_reviews }} reviews)</span>
+              </div>
+              <p class="mb-3">Trusted for clear structure, accurate referencing, and dependable on-time delivery.</p>
+              <a href="{{ url_for('main.public_writers') }}" class="btn btn-outline-primary btn-sm">View Full Profile</a>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="col-12"><div class="tile-soft">No approved writers yet.</div></div>
+      {% endif %}
+    </div>
   </div>
 </section>
 
-<section class="mb-5" id="writers">
-  <h2 class="section-title">Meet Our Writers</h2>
-  <div class="row g-3">
-    {% if writers %}
-      {% for w in writers %}
-        <div class="col-md-4">
-          <div class="writer-card h-100">
-            <h5>{{ w.name }}</h5>
-            <p class="text-muted">{{ w.subject or 'Academic Specialist' }}</p>
-            <p class="small text-muted">Rating: {{ w.rating or 0 }} / 5 · {{ review_counts.get(w.id, 0) }} reviews</p>
-            <p class="mb-0">Trusted by students for clarity, structure, and on-time delivery.</p>
+<section class="writer-recruit-band mb-5" id="writer-recruitment">
+  <div class="writer-recruit-shell">
+    <div class="row g-4 align-items-stretch">
+      <div class="col-lg-6">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-mortarboard-fill"></i>
+          <h2 class="mb-0">{{ recruitment.headline }}</h2>
+        </div>
+        <p class="mb-3">{{ recruitment.subtext }}</p>
+        <div class="writer-recruit-benefits mb-3">
+          <div class="benefit-row"><i class="bi bi-clock-history"></i><span>{{ recruitment.benefits[0] if recruitment.benefits|length > 0 else 'Flexible work schedule' }}</span></div>
+          <div class="benefit-row"><i class="bi bi-shield-check"></i><span>{{ recruitment.benefits[1] if recruitment.benefits|length > 1 else 'Secure payments' }}</span></div>
+          <div class="benefit-row"><i class="bi bi-journal-bookmark"></i><span>{{ recruitment.benefits[2] if recruitment.benefits|length > 2 else 'Build your academic portfolio' }}</span></div>
+          <div class="benefit-row"><i class="bi bi-globe2"></i><span>{{ recruitment.benefits[3] if recruitment.benefits|length > 3 else 'Work with global clients' }}</span></div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{{ url_for('main.writer_apply') }}" class="btn writer-recruit-btn btn-lg">{{ recruitment.cta_text }}</a>
+          <a href="{{ url_for('main.writer_recruitment') }}" class="btn writer-learn-btn btn-lg">Learn More About Becoming a Writer</a>
+        </div>
+
+        <blockquote class="writer-quote mt-3 mb-0">"{{ recruitment.testimonial }}" - {{ recruitment.testimonial_author }}</blockquote>
+      </div>
+      <div class="col-lg-6">
+        <div class="writer-recruit-right h-100">
+          <div class="writer-visual-stage mb-3" aria-label="Writer recruitment visual">
+            <div class="writer-visual-overlay">
+              <div class="writer-visual-title">Writer Pathway</div>
+              <div class="writer-visual-sub">Structured onboarding for quality and consistency</div>
+              <div class="writer-visual-steps">
+                {% for step in recruitment.steps[:4] %}
+                <span class="visual-step">{{ loop.index }}. {{ step }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="writer-recruit-card writer-spotlight-card">
+            <h5 class="mb-2">Writer Spotlight</h5>
+            {% if writers %}
+            {% set sw = writers[0] %}
+            <div class="d-flex align-items-center gap-2">
+              <img src="{{ url_for('static', filename='img/writer-photo.png') }}" alt="Writer spotlight" class="writer-spotlight-avatar">
+              <div>
+                <div class="fw-semibold">{{ sw.name }}</div>
+                <div class="small text-muted">{{ sw.subject or 'Academic Specialist' }}</div>
+                <div class="small">Rating: {{ sw.rating or 4.8 }}/5</div>
+              </div>
+            </div>
+            {% else %}
+            <div class="small text-muted">Approved writer spotlights will appear here.</div>
+            {% endif %}
           </div>
         </div>
-      {% endfor %}
-    {% else %}
-      <div class="col-12"><div class="tile-soft">No approved writers yet.</div></div>
-    {% endif %}
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="mb-5" id="testimonials">
-  <h2 class="section-title">Testimonials</h2>
-  <div class="row g-3">
-    <div class="col-md-6"><div class="tile-soft h-100"><p>"AcademicPro helped me meet my deadline and improve my grade. The process was smooth and professional."</p><small>- Sarah, University Student</small></div></div>
-    <div class="col-md-6"><div class="tile-soft h-100"><p>"I was impressed by the quality of research and the attention to detail. Highly recommended!"</p><small>- Daniel, Graduate Student</small></div></div>
+<section class="home-structured-block mb-5" id="testimonials">
+  <div class="home-structured-shell">
+    <h2 class="section-title mb-2">Testimonials</h2>
+    <p class="text-muted mb-4">Real feedback from students who used AcademicPro to meet tight deadlines with confidence.</p>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <article class="testimonial-card h-100">
+          <div class="testimonial-quote-mark"><i class="bi bi-quote"></i></div>
+          <p class="mb-3">"AcademicPro helped me meet my deadline and improve my grade. The process was smooth and professional."</p>
+          <div class="d-flex align-items-center gap-2">
+            <span class="testimonial-avatar">S</span>
+            <div>
+              <div class="fw-semibold">Sarah</div>
+              <div class="small text-muted">University Student</div>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="col-md-6">
+        <article class="testimonial-card h-100">
+          <div class="testimonial-quote-mark"><i class="bi bi-quote"></i></div>
+          <p class="mb-3">"I was impressed by the quality of research and the attention to detail. Highly recommended!"</p>
+          <div class="d-flex align-items-center gap-2">
+            <span class="testimonial-avatar">D</span>
+            <div>
+              <div class="fw-semibold">Daniel</div>
+              <div class="small text-muted">Graduate Student</div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="mb-5">
-  <h2 class="section-title">Student Success Stories</h2>
-  <div class="row g-3">
-    <div class="col-md-6"><div class="tile-soft h-100"><h5>Dissertation Rescue (Nursing)</h5><p class="mb-1">Challenge: weak methodology chapter and deadline pressure.</p><p class="mb-0">Outcome: revised structure, evidence-backed data interpretation, and on-time submission with supervisor approval.</p></div></div>
-    <div class="col-md-6"><div class="tile-soft h-100"><h5>Data Analysis Support (Business)</h5><p class="mb-1">Challenge: complex dataset and unclear narrative.</p><p class="mb-0">Outcome: clear analysis framework, visualized findings, and stronger argument quality for final grading.</p></div></div>
+<section class="home-structured-block home-structured-block-alt mb-5">
+  <div class="home-structured-shell">
+    <h2 class="section-title mb-2">Student Success Stories</h2>
+    <p class="text-muted mb-4">Selected examples showing how structured support turned high-pressure tasks into strong submissions.</p>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <article class="success-story-card h-100">
+          <div class="success-story-icon"><i class="bi bi-heart-pulse"></i></div>
+          <h5>Dissertation Rescue (Nursing)</h5>
+          <p class="mb-1"><span class="fw-semibold">Challenge:</span> Weak methodology chapter and deadline pressure.</p>
+          <p class="mb-0"><span class="fw-semibold">Outcome:</span> Revised structure, evidence-backed data interpretation, and on-time submission with supervisor approval.</p>
+        </article>
+      </div>
+      <div class="col-md-6">
+        <article class="success-story-card h-100">
+          <div class="success-story-icon"><i class="bi bi-graph-up-arrow"></i></div>
+          <h5>Data Analysis Support (Business)</h5>
+          <p class="mb-1"><span class="fw-semibold">Challenge:</span> Complex dataset and unclear narrative.</p>
+          <p class="mb-0"><span class="fw-semibold">Outcome:</span> Clear analysis framework, visualized findings, and stronger argument quality for final grading.</p>
+        </article>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -307,70 +451,6 @@
       sessionStorage.setItem("guest_welcome_seen", "1");
     }
 
-    const flowSteps = {
-      step1: {
-        title: "Submit Instructions",
-        body: "Provide complete instructions with topic, academic level, citation style, deadline, and required sources. The clearer your brief, the faster and better your first draft.",
-        bullets: [
-          "Attach rubric, reference materials, and formatting notes.",
-          "Set your timezone to avoid deadline confusion.",
-          "Use the live calculator for transparent pricing."
-        ]
-      },
-      step2: {
-        title: "Admin Review & Writer Match",
-        body: "Admin verifies order details and matches your project with a qualified writer based on subject expertise, workload, and performance history.",
-        bullets: [
-          "Writers are filtered by specialty and quality metrics.",
-          "Priority handling is applied for urgent deadlines.",
-          "You receive assignment notification once writer is approved."
-        ]
-      },
-      step3: {
-        title: "Secure Deposit",
-        body: "Payment is confirmed before writing begins to protect both parties. Funds are managed under platform rules and released after successful completion.",
-        bullets: [
-          "Clear pricing before final submission.",
-          "Structured milestones can be tracked in your dashboard.",
-          "Financial records remain visible under billing history."
-        ]
-      },
-      step4: {
-        title: "Live Collaboration",
-        body: "When a writer is assigned, direct client-writer chat activates in the order workspace for clarifications, draft updates, and timely decisions.",
-        bullets: [
-          "Order timeline and milestone tracker update continuously.",
-          "Files are organized into references, drafts, and final deliverables.",
-          "Admin support chat remains available for escalations."
-        ]
-      },
-      step5: {
-        title: "Review, Revision, Release",
-        body: "Review the submission, request revisions where needed, and approve the final version. Once approved, payment is released and order is archived.",
-        bullets: [
-          "Revision loop is tracked to closure.",
-          "Client can leave rating and feedback after completion.",
-          "History remains available for future follow-up."
-        ]
-      }
-    };
-    const flowNav = document.getElementById("flowNav");
-    const flowTitle = document.getElementById("flowTitle");
-    const flowBody = document.getElementById("flowBody");
-    const flowBullets = document.getElementById("flowBullets");
-    if (flowNav && flowTitle && flowBody && flowBullets) {
-      flowNav.querySelectorAll("[data-flow]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          flowNav.querySelectorAll("[data-flow]").forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
-          const step = flowSteps[btn.getAttribute("data-flow")];
-          if (!step) return;
-          flowTitle.textContent = step.title;
-          flowBody.textContent = step.body;
-          flowBullets.innerHTML = step.bullets.map((line) => `<li>${line}</li>`).join("");
-        });
-      });
-    }
   })();
 </script>
 {% endblock %}

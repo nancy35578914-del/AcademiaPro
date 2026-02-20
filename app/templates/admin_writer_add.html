@@ -1,15 +1,32 @@
 {% extends 'admin_base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h3 class="fw-bold text-primary">➕ Add New Writer</h3>
-  <form method="POST">
+<div class="container mt-4" style="max-width: 760px;">
+  <h3 class="fw-bold text-primary">Add New Writer</h3>
+  <form method="POST" enctype="multipart/form-data" class="admin-card p-3 mt-3">
     <div class="mb-3">
       <label class="form-label">Name</label>
       <input type="text" class="form-control" name="name" required>
     </div>
     <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-control" name="email" placeholder="writer@example.com">
+    </div>
+    <div class="mb-3">
       <label class="form-label">Subject</label>
-      <input type="text" class="form-control" name="subject">
+      <input type="text" class="form-control" name="subject" placeholder="Programming, Business, Nursing">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Status</label>
+      <select class="form-select" name="status">
+        <option value="approved">Approved</option>
+        <option value="active">Active</option>
+        <option value="suspended">Suspended</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Upload CV</label>
+      <input type="file" class="form-control" name="resume">
+      <small class="text-muted">Accepted: PDF, DOC, DOCX, TXT.</small>
     </div>
     <div class="mb-3">
       <label class="form-label">Image URL (optional)</label>

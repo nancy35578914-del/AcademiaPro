@@ -7,7 +7,7 @@
       <h2 class="mb-1">Blog Manager</h2>
       <p class="text-muted mb-0">Admins and approved writers can publish pillar and cluster posts.</p>
     </div>
-    {% if current_user.is_admin %}
+    {% if manage_scope == 'admin' %}
       <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Admin</a>
     {% else %}
       <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
@@ -86,8 +86,13 @@
               {% endif %}
             </td>
             <td>
-              <a href="{{ url_for('main.edit_blog', id=post.id) }}" class="btn btn-sm btn-outline-warning">Edit</a>
-              <a href="{{ url_for('main.delete_blog', id=post.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this post?')">Delete</a>
+              {% if manage_scope == 'admin' %}
+                <a href="{{ url_for('main.edit_blog', id=post.id, scope=manage_scope) }}" class="btn btn-sm btn-outline-warning">Edit</a>
+                <a href="{{ url_for('main.delete_blog', id=post.id, scope=manage_scope) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this post?')">Delete</a>
+              {% else %}
+                <a href="{{ url_for('main.writer_edit_blog', id=post.id) }}" class="btn btn-sm btn-outline-warning">Edit</a>
+                <a href="{{ url_for('main.writer_delete_blog', id=post.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this post?')">Delete</a>
+              {% endif %}
             </td>
           </tr>
           {% else %}

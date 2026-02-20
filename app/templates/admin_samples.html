@@ -53,6 +53,7 @@
           <div>{{ sample.content[:120] }}{% if sample.content|length > 120 %}...{% endif %}</div>
         </div>
         <div class="text-end">
+          <a class="btn btn-sm btn-outline-secondary mb-1" href="{{ url_for('main.sample_detail', sample_id=sample.id, source='admin') }}">View</a>
           {% if sample.file_name %}
             <a class="btn btn-sm btn-outline-primary mb-1" href="{{ url_for('static', filename='uploads/samples/' ~ sample.file_name) }}" target="_blank">Download</a>
           {% elif sample.source_url %}

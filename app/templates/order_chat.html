@@ -7,7 +7,7 @@
       <h2 class="mb-1">Order #{{ order.id }} Details</h2>
       <p class="text-muted mb-0">{{ order.topic }}</p>
     </div>
-    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm">{{ back_label }}</a>
   </div>
 
   <div class="row g-3 mb-3">
@@ -68,11 +68,102 @@
     </div>
   </div>
 
+  {% if admin_view %}
+  <div class="section-card mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <h5 class="mb-0">Admin Order Monitoring</h5>
+      <span class="badge {% if admin_overview.deadline_state == 'urgent' %}bg-danger{% elif admin_overview.deadline_state == 'warning' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+        {{ admin_overview.deadline_text }}
+      </span>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-4">
+        <div class="small fw-semibold mb-2">Order Overview</div>
+        <div class="small mb-1"><strong>Order ID:</strong> #{{ admin_overview.order_id }}</div>
+        <div class="small mb-1"><strong>Topic:</strong> {{ admin_overview.topic }}</div>
+        <div class="small mb-1"><strong>Client:</strong> {{ admin_overview.client_name }} ({{ admin_overview.client_email }})</div>
+        <div class="small mb-1"><strong>Writer:</strong> {{ admin_overview.writer_name }}</div>
+        <div class="small mb-1"><strong>Writer Rating:</strong> {{ admin_overview.writer_rating if admin_overview.writer_rating else 'New' }}</div>
+        <div class="small mb-1"><strong>Expertise:</strong> {{ admin_overview.writer_expertise }}</div>
+        <div class="small mb-2"><strong>Status:</strong> {{ admin_overview.status }}</div>
+        <div class="small fw-semibold mb-1">Attachment Checklist</div>
+        <div class="small {% if attachment_checklist.rubric %}text-success{% else %}text-danger{% endif %}">Rubric: {{ 'Yes' if attachment_checklist.rubric else 'Missing' }}</div>
+        <div class="small {% if attachment_checklist.citation %}text-success{% else %}text-danger{% endif %}">Citation Style: {{ 'Set' if attachment_checklist.citation else 'Missing' }}</div>
+        <div class="small {% if attachment_checklist.drafts %}text-success{% else %}text-warning{% endif %}">Drafts: {{ 'Uploaded' if attachment_checklist.drafts else 'Pending' }}</div>
+        <div class="small {% if attachment_checklist.references %}text-success{% else %}text-danger{% endif %}">References: {{ 'Uploaded' if attachment_checklist.references else 'Missing' }}</div>
+      </div>
+      <div class="col-lg-4">
+        <div class="small fw-semibold mb-2">Progress Tracker</div>
+        <ul class="list-unstyled mb-2">
+          {% for stage in admin_stage_rows %}
+            <li class="small d-flex justify-content-between align-items-center mb-1">
+              <span>{{ stage.label }}</span>
+              {% if stage.state == 'completed' %}
+                <span class="badge bg-success">Completed</span>
+              {% elif stage.state == 'in_progress' %}
+                <span class="badge bg-warning text-dark">In Progress</span>
+              {% elif stage.state == 'urgent' %}
+                <span class="badge bg-danger">Urgent</span>
+              {% else %}
+                <span class="badge bg-secondary">Pending</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        <form method="POST" action="{{ url_for('main.update_order', id=order.id) }}" class="row g-2">
+          <div class="col-8">
+            <select name="status" class="form-select form-select-sm">
+              {% for s in admin_status_choices %}
+                <option value="{{ s }}" {% if (order.status or '') == s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-4 d-grid">
+            <button class="btn btn-sm btn-outline-primary" type="submit">Override</button>
+          </div>
+        </form>
+      </div>
+      <div class="col-lg-4">
+        <div class="small fw-semibold mb-2">Writer Tools Oversight</div>
+        <div class="small mb-1"><strong>Plagiarism:</strong> {{ admin_quality.plagiarism }}</div>
+        <div class="small mb-1"><strong>AI Detection:</strong> {{ admin_quality.ai_detection }}</div>
+        <div class="small fw-semibold mt-2 mb-1">Self-Editing Checklist</div>
+        <div class="small {% if admin_quality.self_editing.transitions %}text-success{% else %}text-muted{% endif %}">Transitions</div>
+        <div class="small {% if admin_quality.self_editing.thesis %}text-success{% else %}text-muted{% endif %}">Thesis</div>
+        <div class="small {% if admin_quality.self_editing.grammar %}text-success{% else %}text-muted{% endif %}">Grammar</div>
+        <div class="small {% if admin_quality.self_editing.formatting %}text-success{% else %}text-muted{% endif %}">Formatting</div>
+        <div class="small {% if admin_quality.self_editing.instructions %}text-success{% else %}text-muted{% endif %}">Instruction Compliance</div>
+        <div class="small fw-semibold mt-2 mb-1">Time Tracker</div>
+        <div class="small">First Update: {{ admin_time_tracker.first_update }}</div>
+        <div class="small">Last Update: {{ admin_time_tracker.last_update }}</div>
+        <div class="small">Logged Hours: {{ admin_time_tracker.logged_hours }}</div>
+        <div class="small">Writer Updates: {{ admin_time_tracker.updates_count }}</div>
+      </div>
+    </div>
+    {% if admin_alerts %}
+    <hr>
+    <div class="small fw-semibold mb-2">Notifications</div>
+    <div class="d-flex flex-column gap-2">
+      {% for alert in admin_alerts %}
+        <div class="alert alert-{{ alert.level }} py-2 mb-0 small">{{ alert.text }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="row g-3">
     <div class="col-lg-7">
       <div class="card mb-3">
         <div id="orderThreadBox" class="card-body" style="max-height: 420px; overflow-y: auto;">
-          <h5 class="mb-3">Client ↔ Writer Thread</h5>
+          {% if admin_view %}
+          <h5 class="mb-3">Client <-> Writer Thread (Admin Monitor)</h5>
+          <div class="alert alert-info small">
+            Admin view is read-only. This page is for progress monitoring and quality oversight.
+          </div>
+          {% else %}
+          <h5 class="mb-3">Client <-> Writer Thread</h5>
+          {% endif %}
           {% if not chat_active %}
             <div class="alert alert-warning small">
               Client-writer chat is inactive. You can view history, but new messages are disabled. Use admin support for follow-ups.
@@ -96,7 +187,7 @@
         </div>
       </div>
 
-      {% if chat_active %}
+      {% if chat_active and not admin_view %}
       <form method="POST" enctype="multipart/form-data" class="section-card" id="orderChatForm">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="mb-0">Send Update</h6>
@@ -127,6 +218,12 @@
         </div>
         <button class="btn btn-primary btn-sm" type="submit">Send / Upload</button>
       </form>
+      {% elif admin_view %}
+      <div class="section-card">
+        <h6 class="mb-2">Admin Monitoring Mode</h6>
+        <div class="small text-muted mb-2">Message and file upload actions are disabled here for admins.</div>
+        <a href="{{ url_for('main.admin_chat_grouped') }}" class="btn btn-outline-primary btn-sm">Open Admin Communication Hub</a>
+      </div>
       {% else %}
       <div class="section-card">
         <h6 class="mb-2">Chat Disabled</h6>
@@ -194,7 +291,13 @@
                     <div class="small">{{ item.file.filename }} {% if item.version %}<span class="badge bg-light text-dark">{{ item.version }}</span>{% endif %}</div>
                     <div class="small text-muted">By {{ item.file.uploader }} | {{ item.file.uploaded_at.strftime('%Y-%m-%d %H:%M') if item.file.uploaded_at else '' }}</div>
                   </div>
-                  <a href="{{ url_for('main.download_order_file', filename=item.file.filename) }}" class="btn btn-outline-primary btn-sm">Download</a>
+                  <div class="d-flex gap-1">
+                    <a href="{{ url_for('main.download_order_file', filename=item.file.filename) }}" class="btn btn-outline-primary btn-sm">Download</a>
+                    {% if admin_view %}
+                      <a href="{{ url_for('main.admin_chat_grouped') }}" class="btn btn-outline-success btn-sm">Approve</a>
+                      <a href="{{ url_for('main.admin_chat_grouped') }}" class="btn btn-outline-warning btn-sm">Re-upload</a>
+                    {% endif %}
+                  </div>
                 </li>
               {% endfor %}
             </ul>
@@ -204,6 +307,7 @@
         {% endif %}
       </div>
 
+      {% if not admin_view %}
       <div class="section-card mt-3">
         <h5 class="mb-3">Admin Support Chat</h5>
         <div id="orderAdminThreadBox" class="admin-chat-box mb-3">
@@ -227,6 +331,7 @@
           </div>
         </form>
       </div>
+      {% endif %}
 
       {% if existing_review is not none %}
         <div class="section-card mt-3">
@@ -353,7 +458,11 @@
       const res = await fetch("{{ url_for('main.order_chat_messages', order_id=order.id) }}", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok || !data.ok) return;
-      let html = '<h5 class="mb-3">Client ↔ Writer Thread</h5>';
+      let html = {% if admin_view %}
+        '<h5 class="mb-3">Client <-> Writer Thread (Admin Monitor)</h5><div class="alert alert-info small">Admin view is read-only. This page is for progress monitoring and quality oversight.</div>';
+      {% else %}
+        '<h5 class="mb-3">Client <-> Writer Thread</h5>';
+      {% endif %}
       if (!data.chat_active) {
         html += '<div class="alert alert-warning small">Client-writer chat is inactive. You can view history, but new messages are disabled. Use admin support for follow-ups.</div>';
       }
@@ -398,3 +507,4 @@
   setInterval(refreshOrderAdminThread, 5000);
 </script>
 {% endblock %}
+

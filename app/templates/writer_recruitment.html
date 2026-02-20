@@ -1,0 +1,113 @@
+﻿{% extends "base.html" %}
+{% block title %}Become a Writer | AcademicPro{% endblock %}
+{% block content %}
+<div class="writer-learn-page">
+  <section class="writer-learn-hero writer-learn-hero-premium mb-4">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-7">
+        <div class="small text-uppercase fw-semibold writer-learn-kicker">Writer Recruitment Hub</div>
+        <h1 class="mb-2">{{ recruitment.headline }}</h1>
+        <p class="mb-3">{{ recruitment.subtext }}</p>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{{ url_for('main.writer_apply') }}" class="btn writer-recruit-btn btn-lg">{{ recruitment.cta_text }}</a>
+          <a href="{{ url_for('main.contact') }}" class="btn writer-learn-btn btn-lg">Talk to Support</a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="writer-learn-hero-visual">
+          <div class="writer-visual-title">Onboarding Roadmap</div>
+          <div class="writer-visual-steps mt-2">
+            {% for step in recruitment.steps[:4] %}
+            <span class="visual-step">{{ loop.index }}. {{ step }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-card mb-4">
+    <h2 class="h4 mb-3">Benefits of Joining</h2>
+    <div class="row g-3">
+      {% for benefit in recruitment.benefits %}
+      <div class="col-md-6">
+        <div class="writer-learn-item h-100"><i class="bi bi-check2-circle"></i> {{ benefit }}</div>
+      </div>
+      {% endfor %}
+      <div class="col-md-6">
+        <div class="writer-learn-item h-100"><i class="bi bi-stars"></i> Professional growth and recognition</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-card mb-4">
+    <h2 class="h4 mb-3">Registration Steps</h2>
+    <div class="step-stack writer-step-grid">
+      {% for step in recruitment.steps %}
+      <div class="step-row writer-step-card">
+        <span class="step-dot">{{ loop.index }}</span>
+        <span>{{ step }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section-card mb-4">
+    <h2 class="h4 mb-3">Requirements and Things to Consider</h2>
+    <ul class="mb-0">
+      {% for item in recruitment.considerations %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="section-card mb-4">
+    <h2 class="h4 mb-3">Testimonials and Writer Spotlights</h2>
+    <blockquote class="writer-quote mb-3">"{{ recruitment.testimonial }}" - {{ recruitment.testimonial_author }}</blockquote>
+    <div class="row g-3">
+      {% for w in writers %}
+      <div class="col-md-4">
+        <div class="writer-card h-100">
+          <div class="fw-semibold">{{ w.name }}</div>
+          <div class="small text-muted">{{ w.subject or 'Academic Specialist' }}</div>
+          <div class="small">Rating: {{ w.rating or 0 }}/5 - {{ review_counts.get(w.id, 0) }} reviews</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-12"><div class="text-muted">Writer spotlights will appear once profiles are available.</div></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section-card mb-4">
+    <h2 class="h4 mb-3">FAQ</h2>
+    <div class="writer-faq-list">
+      <div class="writer-faq-item">
+        <strong>How do I get paid?</strong>
+        <div class="small text-muted">Payments are processed securely and released based on completed order milestones.</div>
+      </div>
+      <div class="writer-faq-item">
+        <strong>What subjects can I write in?</strong>
+        <div class="small text-muted">You can apply for your strongest subjects and preferred academic levels.</div>
+      </div>
+      <div class="writer-faq-item">
+        <strong>How often are assignments available?</strong>
+        <div class="small text-muted">Availability depends on current client demand and your approved expertise area.</div>
+      </div>
+      <div class="writer-faq-item">
+        <strong>Can I work part-time?</strong>
+        <div class="small text-muted">Yes. Most writers work flexibly based on their schedule.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="writer-learn-cta text-center py-4 mb-3">
+    <h2 class="h4 fw-bold">Ready to start your journey as an AcademicPro writer?</h2>
+    <p class="mb-3">Apply today and join our global team.</p>
+    <div class="d-flex justify-content-center gap-2 flex-wrap">
+      <a href="{{ url_for('main.writer_apply') }}" class="btn writer-recruit-btn btn-lg">Apply Now</a>
+      <a href="{{ url_for('main.contact') }}" class="btn writer-learn-btn btn-lg">Contact Support</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

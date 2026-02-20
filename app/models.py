@@ -1,7 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
-from flask import current_app
 from app.extensions import db
 
 class ChatMessage(db.Model):
@@ -43,7 +42,7 @@ class Writer(db.Model):
     rating = db.Column(db.Float, nullable=True)
     image_url = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    approved = db.Column(db.Boolean, default=False)
+    approved = db.Column(db.Boolean, nullable=True, default=None)
 
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -92,15 +91,7 @@ class User(UserMixin, db.Model):
     @property
     def is_admin(self):
         role = (getattr(self, "role", "") or "").strip().lower()
-        if role == "admin":
-            return True
-        email = (self.email or "").strip().lower()
-        default_admins = {"bwamistevenez001@gmail.com", "bwamistevenez@gmail.com"}
-        try:
-            configured = set(current_app.config.get("ADMIN_EMAILS", []))
-        except Exception:
-            configured = set()
-        return email in (configured or default_admins)
+        return role == "admin"
 
     @property
     def is_writer(self):

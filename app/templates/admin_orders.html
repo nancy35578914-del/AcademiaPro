@@ -1,96 +1,292 @@
 {% extends "admin_base.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h1 class="h3 mb-0">Orders & Job Applications</h1>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('main.admin_orders_export') }}" class="btn btn-outline-primary btn-sm">Export Reports</a>
+    <a href="{{ url_for('main.admin_chat_grouped') }}" class="btn btn-outline-secondary btn-sm">Communication Hub</a>
+  </div>
 </div>
+
+{% if order_alerts %}
+<div class="admin-card p-3 mb-3">
+  <div class="small text-muted mb-2">Notifications & Alerts</div>
+  <div class="d-flex flex-column gap-2">
+    {% for alert in order_alerts %}
+    <div class="alert alert-{{ alert.level }} py-2 mb-0 d-flex justify-content-between align-items-center">
+      <div class="small fw-semibold">{{ alert.title }}</div>
+      <a href="{{ alert.action }}" class="btn btn-sm btn-outline-dark">{{ alert.action_label }}</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <div class="admin-card p-3 mb-3">
   <form method="GET" class="row g-2 align-items-end">
-    <div class="col-md-4">
+    <div class="col-lg-4 col-md-6">
       <label class="form-label">Global Search</label>
-      <input type="text" name="q" class="form-control" placeholder="Topic, description, client" value="{{ q }}">
+      <input type="text" name="q" class="form-control" placeholder="Topic, client, writer, description" value="{{ q }}">
     </div>
-    <div class="col-md-2">
+    <div class="col-lg-2 col-md-3">
       <label class="form-label">Status</label>
       <select name="status" class="form-select">
         <option value="">All</option>
-        {% for s in ['Pending Review', 'Open', 'In Progress', 'Revision Requested', 'Completed', 'Cancelled'] %}
+        {% for s in ['Open', 'Assigned', 'In Progress', 'Draft Submitted', 'Revision', 'Completed', 'Cancelled', 'Pending Review'] %}
         <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-2"><label class="form-label">Date From</label><input type="date" name="date_from" class="form-control" value="{{ date_from }}"></div>
-    <div class="col-md-2"><label class="form-label">Date To</label><input type="date" name="date_to" class="form-control" value="{{ date_to }}"></div>
-    <div class="col-md-2 d-flex gap-2">
-      <button class="btn btn-primary w-100">Filter</button>
-      <a href="{{ url_for('main.admin_orders') }}" class="btn btn-outline-secondary">Reset</a>
+    <div class="col-lg-2 col-md-3">
+      <label class="form-label">Date Type</label>
+      <select name="date_field" class="form-select">
+        <option value="posted" {% if date_field == 'posted' %}selected{% endif %}>Posting Date</option>
+        <option value="deadline" {% if date_field == 'deadline' %}selected{% endif %}>Deadline</option>
+      </select>
+    </div>
+    <div class="col-lg-2 col-md-6"><label class="form-label">Date From</label><input type="date" name="date_from" class="form-control" value="{{ date_from }}"></div>
+    <div class="col-lg-2 col-md-6"><label class="form-label">Date To</label><input type="date" name="date_to" class="form-control" value="{{ date_to }}"></div>
+    <div class="col-12 d-flex gap-2 justify-content-end">
+      <button class="btn btn-primary btn-sm" type="submit">Filter</button>
+      <a href="{{ url_for('main.admin_orders') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
     </div>
   </form>
 </div>
 
-<div class="admin-card p-3">
-  <div class="table-responsive">
-    <table class="table align-middle">
+<form method="POST" action="{{ url_for('main.admin_orders_bulk') }}" class="admin-card p-3 mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Bulk Action</label>
+      <select name="bulk_action" class="form-select">
+        <option value="set_status">Update statuses in batch</option>
+        <option value="approve_first_pending">Approve first pending application</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Bulk Status</label>
+      <select name="bulk_status" class="form-select">
+        {% for s in ['Open', 'Assigned', 'In Progress', 'Draft Submitted', 'Revision', 'Completed', 'Cancelled'] %}
+        <option value="{{ s }}">{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <button class="btn btn-outline-primary w-100" type="submit">Run Bulk Action</button>
+    </div>
+  </div>
+
+  <div class="table-responsive mt-3">
+    <table class="table align-middle" id="ordersTable">
       <thead>
         <tr>
-          <th>ID</th><th>Topic</th><th>Client</th><th>Status</th><th>Deadline</th><th>Price</th><th>Applications</th><th>Actions</th>
+          <th><input class="form-check-input" type="checkbox" id="selectAllOrders"></th>
+          <th>ID</th>
+          <th>Topic</th>
+          <th>Description</th>
+          <th>Client</th>
+          <th>Status</th>
+          <th>Deadline</th>
+          <th>Price</th>
+          <th>Applications</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
       {% for order in orders %}
-        <tr>
+        {% set apps = applications_by_order.get(order.id, []) %}
+        {% set urgent = order.deadline and ((order.deadline - now_utc).total_seconds() <= 86400) and ((order.deadline - now_utc).total_seconds() > 0) and (order.status|lower != 'completed') %}
+        {% set status_key = (order.status or '')|lower %}
+        <tr id="order-{{ order.id }}" class="{% if urgent %}table-danger{% elif 'completed' in status_key %}table-success{% elif 'progress' in status_key or 'assigned' in status_key or 'draft' in status_key or 'revision' in status_key %}table-warning{% endif %}">
+          <td><input class="form-check-input order-check" type="checkbox" name="order_ids" value="{{ order.id }}"></td>
           <td>#{{ order.id }}</td>
+          <td class="fw-semibold">{{ order.topic }}</td>
+          <td class="small">{{ order.description[:90] }}{% if order.description|length > 90 %}...{% endif %}</td>
           <td>
-            <div class="fw-semibold">{{ order.topic }}</div>
-            <div class="small text-muted">{{ order.description[:120] }}{% if order.description|length > 120 %}...{% endif %}</div>
-          </td>
-          <td>{{ order.user.name if order.user else 'Unknown' }}</td>
-          <td><span class="tag-soft">{{ order.status }}</span></td>
-          <td>{{ order.deadline.strftime('%Y-%m-%d') if order.deadline else 'N/A' }}</td>
-          <td>${{ order.price or 0 }}</td>
-          <td>
-            {% set apps = applications_by_order.get(order.id, []) %}
-            {% if apps %}
-              {% for app in apps %}
-              <div class="border rounded p-2 mb-2">
-                <div class="d-flex justify-content-between">
-                  <strong>{{ writer_users.get(app.writer_user_id).name if writer_users.get(app.writer_user_id) else ('User #' ~ app.writer_user_id) }}</strong>
-                  <span class="badge bg-secondary">{{ app.status }}</span>
-                </div>
-                <div class="small text-muted">{{ app.cover_note or 'No pitch provided.' }}</div>
-                {% if app.status == 'pending' %}
-                <form method="POST" action="{{ url_for('main.approve_job_application', application_id=app.id) }}" class="mt-2">
-                  <button class="btn btn-sm btn-success">Approve Writer</button>
-                </form>
-                {% endif %}
-              </div>
-              {% endfor %}
-            {% else %}
-              <span class="text-muted small">No applications</span>
-            {% endif %}
+            <div>{{ order.user.name if order.user else 'Unknown' }}</div>
+            <div class="small text-muted">{{ order.user.email if order.user else '' }}</div>
           </td>
           <td>
-            <form method="POST" action="{{ url_for('main.update_order', id=order.id) }}" class="mb-2">
-              <select name="status" class="form-select form-select-sm mb-2">
-                {% for s in ['Pending Review', 'Open', 'In Progress', 'Revision Requested', 'Completed', 'Cancelled'] %}
+            <form method="POST" action="{{ url_for('main.update_order', id=order.id) }}" class="d-flex gap-1">
+              <select name="status" class="form-select form-select-sm">
+                {% for s in ['Open', 'Assigned', 'In Progress', 'Draft Submitted', 'Revision', 'Completed', 'Cancelled', 'Pending Review'] %}
                 <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
                 {% endfor %}
               </select>
-              <button class="btn btn-sm btn-primary w-100">Update</button>
+              <button class="btn btn-sm btn-primary" title="Update" type="submit">Update</button>
             </form>
-            {% if not order.job_posted %}
-            <form method="POST" action="{{ url_for('main.publish_order_job', id=order.id) }}" class="mb-2">
-              <button class="btn btn-sm btn-success w-100" type="submit">Publish to Writers</button>
-            </form>
+          </td>
+          <td>
+            <div>{{ order.deadline.strftime('%Y-%m-%d %H:%M') if order.deadline else 'N/A' }}</div>
+            {% if order.deadline %}
+            <div class="small {% if urgent %}text-danger fw-semibold{% else %}text-muted{% endif %} order-countdown" data-deadline="{{ order.deadline.isoformat() }}">--</div>
             {% endif %}
-            <a href="{{ url_for('main.delete_order', id=order.id) }}" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Delete this order?')">Delete</a>
+          </td>
+          <td>${{ '%.2f'|format(order.price or 0) }}</td>
+          <td>
+            {% if apps %}
+              {% for app in apps %}
+              <div class="small mb-1">
+                {% set writer_user = writer_users.get(app.writer_user_id) %}
+                <strong>{{ writer_user.name if writer_user else ('User #' ~ app.writer_user_id) }}</strong>
+                <span class="badge bg-secondary">{{ app.status }}</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <span class="small text-muted">No applications</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-grid gap-1">
+              <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#orderDetailsModal{{ order.id }}">Details</button>
+              <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">Chat</a>
+              {% if not order.job_posted %}
+              <form method="POST" action="{{ url_for('main.publish_order_job', id=order.id) }}">
+                <button class="btn btn-sm btn-success w-100" type="submit">Assign Writer Pool</button>
+              </form>
+              {% endif %}
+              <a href="{{ url_for('main.delete_order', id=order.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this order?')">Delete</a>
+            </div>
           </td>
         </tr>
+
+        <div class="modal fade" id="orderDetailsModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Order #{{ order.id }} Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="row g-3">
+                  <div class="col-md-8">
+                    <div class="admin-card p-3 h-100">
+                      <h6 class="mb-2">Full Instructions</h6>
+                      <div class="small mb-1"><strong>Topic:</strong> {{ order.topic }}</div>
+                      <div class="small mb-1"><strong>Word Count:</strong> {{ order.word_count or 'N/A' }}</div>
+                      <div class="small mb-1"><strong>Citation Style:</strong> {{ order.citation_style or 'N/A' }}</div>
+                      <div class="small mb-2"><strong>Sources:</strong> {{ order.sources_count or 'N/A' }}</div>
+                      <div class="small"><strong>Description:</strong><br>{{ order.description }}</div>
+                      <hr>
+                      <h6 class="mb-2">Attached Files</h6>
+                      {% set order_files = files_by_order.get(order.id, []) %}
+                      {% if order_files %}
+                        {% for file in order_files %}
+                        <div class="small d-flex justify-content-between align-items-center border rounded p-2 mb-1">
+                          <span>{{ file.filename }}</span>
+                          <a href="{{ url_for('main.download_order_file', filename=file.filename) }}" class="btn btn-sm btn-outline-primary">Download</a>
+                        </div>
+                        {% endfor %}
+                      {% else %}
+                      <div class="small text-muted">No attachments.</div>
+                      {% endif %}
+                      <hr>
+                      <h6 class="mb-2">Client Notes</h6>
+                      <div class="small">{{ order.description }}</div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="admin-card p-3 h-100">
+                      <h6 class="mb-2">Writer Applications</h6>
+                      {% if apps %}
+                        {% for app in apps %}
+                        {% set writer_user = writer_users.get(app.writer_user_id) %}
+                        {% set writer_profile = writer_profiles.get(writer_user.name) if writer_user else None %}
+                        {% set rating_meta = writer_ratings.get(writer_profile.id) if writer_profile else None %}
+                        <div class="border rounded p-2 mb-2">
+                          <div class="d-flex justify-content-between align-items-center">
+                            <strong class="small">{{ writer_user.name if writer_user else ('User #' ~ app.writer_user_id) }}</strong>
+                            <span class="badge bg-secondary">{{ app.status }}</span>
+                          </div>
+                          <div class="small text-muted">Profile: {{ writer_profile.subject if writer_profile and writer_profile.subject else 'General' }}</div>
+                          <div class="small">Rating: {{ rating_meta.avg if rating_meta else 0 }}/5 ({{ rating_meta.count if rating_meta else 0 }} reviews)</div>
+                          <div class="small text-muted">{{ app.cover_note or "No cover note submitted." }}</div>
+                          <div class="d-grid gap-1 mt-2">
+                            {% if app.status == 'pending' %}
+                            <form method="POST" action="{{ url_for('main.approve_job_application', application_id=app.id) }}">
+                              <button class="btn btn-sm btn-success w-100">Approve Writer</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('main.reject_job_application', application_id=app.id) }}">
+                              <button class="btn btn-sm btn-outline-danger w-100">Reject</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('main.clarify_job_application', application_id=app.id) }}">
+                              <input name="clarification" class="form-control form-control-sm mb-1" placeholder="Request clarification...">
+                              <button class="btn btn-sm btn-outline-primary w-100">Request Clarification</button>
+                            </form>
+                            {% endif %}
+                          </div>
+                        </div>
+                        {% endfor %}
+                      {% else %}
+                      <div class="small text-muted">No writer applications yet.</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <a href="{{ url_for('main.order_chat', order_id=order.id) }}" class="btn btn-outline-primary">Open Order Chat</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
       {% else %}
-        <tr><td colspan="8" class="text-center text-muted">No matching orders found.</td></tr>
+        <tr><td colspan="10" class="text-center text-muted">No matching orders found.</td></tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
+</form>
+
+<div class="admin-card p-3">
+  <h5 class="mb-2">Audit Log</h5>
+  {% if audit_logs %}
+  <ul class="list-group">
+    {% for row in audit_logs %}
+    <li class="list-group-item">
+      <div class="small fw-semibold">{{ row.title }}</div>
+      <div class="small text-muted">{{ row.body }}</div>
+      <div class="small text-muted">{{ row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '' }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="text-muted small">No audit entries yet.</div>
+  {% endif %}
 </div>
+
+<script>
+  (function () {
+    const selectAll = document.getElementById("selectAllOrders");
+    const checks = Array.from(document.querySelectorAll(".order-check"));
+    if (selectAll) {
+      selectAll.addEventListener("change", function () {
+        checks.forEach((cb) => { cb.checked = selectAll.checked; });
+      });
+    }
+
+    function renderCountdown(node) {
+      const raw = node.getAttribute("data-deadline");
+      if (!raw) return;
+      const target = new Date(raw);
+      const now = new Date();
+      const diff = target.getTime() - now.getTime();
+      if (Number.isNaN(diff)) return;
+      if (diff <= 0) {
+        node.textContent = "Deadline passed";
+        node.classList.add("text-danger", "fw-semibold");
+        return;
+      }
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      node.textContent = `${hours}h ${mins}m remaining`;
+    }
+
+    const countdownNodes = Array.from(document.querySelectorAll(".order-countdown"));
+    countdownNodes.forEach(renderCountdown);
+    setInterval(function () {
+      countdownNodes.forEach(renderCountdown);
+    }, 60000);
+  })();
+</script>
 {% endblock %}

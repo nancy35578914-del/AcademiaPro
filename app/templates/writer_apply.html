@@ -1,78 +1,216 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-4" style="max-width: 760px;">
-  <h2 class="mb-2">Apply to Become a Writer</h2>
-  <p class="text-muted">Step 1: Personal Info · Step 2: Professional Expertise</p>
-
-  {% if existing %}
-    <div class="alert {% if existing.approved %}alert-success{% else %}alert-info{% endif %}">
-      Application status: <strong>{% if existing.approved %}Approved{% else %}Pending{% endif %}</strong>
+<section class="writer-apply-page">
+  <div class="writer-apply-shell">
+    <div class="writer-apply-hero mb-4">
+      <div class="writer-apply-kicker">Writer Recruitment</div>
+      <h2 class="mb-2">Apply to Become a Writer</h2>
+      <p class="mb-0">Complete your profile, verify your screening test score, and join our trusted academic team.</p>
     </div>
-  {% endif %}
 
-  <form method="POST" class="card p-3 shadow-sm" enctype="multipart/form-data" id="writerApplyForm">
-    {{ form.hidden_tag() }}
-
-    <div id="stepOne">
-      <div class="mb-3">{{ form.name.label }} {{ form.name(class="form-control py-2", placeholder="Full name") }}</div>
-      <div class="mb-3">{{ form.email.label }} {{ form.email(class="form-control py-2", readonly=true) }}</div>
-      <div class="mb-3">{{ form.education_level.label }} {{ form.education_level(class="form-select") }}</div>
-      <div class="mb-3">{{ form.years_experience.label }} {{ form.years_experience(class="form-control", placeholder="e.g., 3") }}</div>
-      <div class="d-flex justify-content-end">
-        <button class="btn btn-primary btn-sm" type="button" id="nextStep">Next</button>
+    {% if show_confirmation %}
+    <article class="writer-apply-confirm">
+      <div class="writer-apply-confirm-icon"><i class="bi bi-check2-circle"></i></div>
+      <h4 class="mb-2">Thank you for applying!</h4>
+      <p class="mb-2">Our admin team will review your application within 48 hours.</p>
+      <p class="mb-3">A confirmation email with your application details has been sent to <strong>{{ current_user.email }}</strong>.</p>
+      <div class="writer-next-steps">
+        <div class="small text-muted mb-1">Next steps</div>
+        <ul class="mb-0">
+          <li>If approved, you will receive your first assignment in your dashboard.</li>
+          <li>Keep notifications enabled for quick response to admin updates.</li>
+        </ul>
       </div>
-    </div>
-
-    <div id="stepTwo" class="d-none">
-      <div class="mb-3">{{ form.subject.label }} {{ form.subject(class="form-control", placeholder="e.g., Nursing, Business Law, Python Programming") }}</div>
-      <div class="mb-3">
-        <label class="form-label">Writing Style Mastery</label>
-        <div class="d-flex flex-wrap gap-3">
-          {% for value, label in form.writing_styles.choices %}
-            <label class="form-check">
-              <input class="form-check-input" type="checkbox" name="{{ form.writing_styles.name }}" value="{{ value }}" {% if form.writing_styles.data and value in form.writing_styles.data %}checked{% endif %}>
-              <span class="form-check-label">{{ label }}</span>
-            </label>
-          {% endfor %}
+    </article>
+    {% else %}
+      {% if existing %}
+        <div class="alert {% if existing.approved %}alert-success{% else %}alert-info{% endif %}">
+          Application status: <strong>{% if existing.approved %}Approved{% else %}Pending Review{% endif %}</strong>
         </div>
+      {% endif %}
+
+      <div class="writer-apply-stepper mb-3" aria-label="Application steps">
+        <div class="step-pill active" data-step-indicator="1">1. Personal Info</div>
+        <div class="step-pill" data-step-indicator="2">2. Professional Expertise</div>
+        <div class="step-pill" data-step-indicator="3">3. Screening Test</div>
       </div>
-      <div class="mb-3">{{ form.portfolio.label }} {{ form.portfolio(class="form-control") }}</div>
-      <div class="mb-2">{{ form.bio.label }} {{ form.bio(class="form-control", rows="5", maxlength="500", placeholder="Briefly describe your experience, specialties, and writing process.") }}</div>
-      <div class="small text-muted mb-3"><span id="bioCount">0</span>/500 characters</div>
-      <div class="mb-3 form-check">
-        {{ form.accept_terms(class="form-check-input", id="writerTerms") }}
-        <label class="form-check-label small" for="writerTerms">
-          I agree to the <a href="{{ url_for('main.terms') }}">Terms</a> and <a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a>.
-        </label>
-        {% if form.accept_terms.errors %}
-          <div class="text-danger small mt-1">{{ form.accept_terms.errors[0] }}</div>
-        {% endif %}
-      </div>
-      <div class="d-flex justify-content-between">
-        <button class="btn btn-outline-secondary btn-sm" type="button" id="prevStep">Back</button>
-        <button class="btn btn-primary btn-sm" type="submit">Submit Application</button>
-      </div>
-    </div>
-  </form>
-</div>
+
+      <form method="POST" enctype="multipart/form-data" class="writer-apply-card" id="writerApplyForm">
+        {{ form.hidden_tag() }}
+        {{ form.subject(id="subject", type="hidden") }}
+
+        <div id="stepOne">
+          <h5 class="mb-3">Step 1: Personal Info</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              {{ form.name.label(class="form-label") }}
+              {{ form.name(class="form-control", placeholder="Full name") }}
+            </div>
+            <div class="col-md-6">
+              {{ form.email.label(class="form-label") }}
+              {{ form.email(class="form-control", readonly=true) }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone Number <span class="text-muted">(optional)</span></label>
+              <input type="text" class="form-control" name="phone" placeholder="+1 555 000 0000">
+            </div>
+            <div class="col-md-6">
+              {{ form.education_level.label(class="form-label") }}
+              {{ form.education_level(class="form-select") }}
+            </div>
+            <div class="col-md-6">
+              {{ form.years_experience.label(class="form-label") }}
+              {{ form.years_experience(class="form-control", placeholder="e.g. 3") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Location / Time Zone</label>
+              <input type="text" class="form-control" name="location_timezone" placeholder="United States (UTC-5)">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-3">
+            <button class="btn btn-primary" type="button" id="nextStep">Continue</button>
+          </div>
+        </div>
+
+        <div id="stepTwo" class="d-none">
+          <h5 class="mb-3">Step 2: Professional Expertise</h5>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Subject / Expertise</label>
+              <select id="expertiseMulti" name="expertise_multi" class="form-select" multiple size="6">
+                {% for option in expertise_options %}
+                <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Multi-select: hold Ctrl (Windows) or Command (Mac) to choose multiple subjects.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Additional Expertise <span class="text-muted">(optional)</span></label>
+              <input type="text" class="form-control" name="expertise_other" placeholder="Add any other subject area">
+            </div>
+            <div class="col-12">
+              {{ form.writing_styles.label(class="form-label") }}
+              <select class="form-select" id="styleMastery" name="{{ form.writing_styles.name }}" multiple size="4">
+                {% for value, label in form.writing_styles.choices %}
+                <option value="{{ value }}" {% if form.writing_styles.data and value in form.writing_styles.data %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Select the referencing formats you can handle confidently.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ form.portfolio.label.text }}</label>
+              <label for="portfolio" class="upload-dropzone" id="portfolioDropzone">
+                <i class="bi bi-cloud-arrow-up"></i>
+                <span>Drag and drop your CV/samples here, or click to upload.</span>
+                <small>Allowed: PDF, DOC, DOCX</small>
+              </label>
+              {{ form.portfolio(class="form-control d-none", id="portfolio") }}
+              <div class="small text-muted mt-1" id="portfolioName"></div>
+            </div>
+            <div class="col-12">
+              {{ form.bio.label(class="form-label") }}
+              {{ form.bio(class="form-control", rows="5", maxlength="500", placeholder="Write a short bio (max 500 characters): background, strengths, and writing workflow.") }}
+              <div class="d-flex justify-content-between small text-muted mt-1">
+                <span>Helper text: keep it concise and specific for faster review.</span>
+                <span><span id="bioCount">0</span>/500</span>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-outline-secondary" type="button" id="prevStep">Back</button>
+            <button class="btn btn-primary" type="button" id="nextToTest">Continue to Screening</button>
+          </div>
+        </div>
+
+        <div id="stepThree" class="d-none">
+          <h5 class="mb-3">Step 3: Screening Test</h5>
+          <div class="writer-quiz-box mb-3">
+            <p class="small mb-2">Automatic Grammar and Writing Test. Pass mark: <strong>{{ pass_mark }}%</strong>.</p>
+            <div id="quizStatus" class="small mb-2 text-muted">
+              {% if quiz_score is not none %}
+                Your previous score: <strong>{{ quiz_score }}%</strong>
+              {% else %}
+                Answer all questions to calculate your score.
+              {% endif %}
+            </div>
+            {% for item in quiz_questions %}
+            <div class="quiz-question">
+              <div class="small fw-semibold mb-2">{{ loop.index }}. {{ item.question }}</div>
+              {% for value, label in item.options %}
+              <label class="form-check d-block mb-1">
+                <input class="form-check-input quiz-answer" type="radio" name="{{ item.id }}" value="{{ value }}">
+                <span class="form-check-label small">{{ label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3 form-check">
+            {{ form.accept_terms(class="form-check-input", id="writerTerms") }}
+            <label class="form-check-label small" for="writerTerms">
+              I agree to the <a href="{{ url_for('main.terms') }}">Terms</a> and <a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a>.
+            </label>
+            {% if form.accept_terms.errors %}
+            <div class="text-danger small mt-1">{{ form.accept_terms.errors[0] }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-secondary" type="button" id="backToExpertise">Back</button>
+            <button class="btn btn-success" type="submit" id="registerWriterBtn" disabled>Register as Writer</button>
+          </div>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</section>
 
 <script>
   const nextBtn = document.getElementById("nextStep");
   const prevBtn = document.getElementById("prevStep");
+  const nextToTestBtn = document.getElementById("nextToTest");
+  const backToExpertiseBtn = document.getElementById("backToExpertise");
   const stepOne = document.getElementById("stepOne");
   const stepTwo = document.getElementById("stepTwo");
+  const stepThree = document.getElementById("stepThree");
+  const indicators = Array.from(document.querySelectorAll("[data-step-indicator]"));
+
+  function setActiveStep(step) {
+    indicators.forEach((node) => {
+      node.classList.toggle("active", String(node.getAttribute("data-step-indicator")) === String(step));
+    });
+  }
+
   if (nextBtn && stepOne && stepTwo) {
     nextBtn.addEventListener("click", () => {
       stepOne.classList.add("d-none");
       stepTwo.classList.remove("d-none");
+      setActiveStep(2);
     });
   }
   if (prevBtn && stepOne && stepTwo) {
     prevBtn.addEventListener("click", () => {
       stepTwo.classList.add("d-none");
       stepOne.classList.remove("d-none");
+      setActiveStep(1);
     });
   }
+  if (nextToTestBtn && stepTwo && stepThree) {
+    nextToTestBtn.addEventListener("click", () => {
+      stepTwo.classList.add("d-none");
+      stepThree.classList.remove("d-none");
+      setActiveStep(3);
+    });
+  }
+  if (backToExpertiseBtn && stepTwo && stepThree) {
+    backToExpertiseBtn.addEventListener("click", () => {
+      stepThree.classList.add("d-none");
+      stepTwo.classList.remove("d-none");
+      setActiveStep(2);
+    });
+  }
+
   const bioInput = document.getElementById("bio");
   const bioCount = document.getElementById("bioCount");
   if (bioInput && bioCount) {
@@ -80,5 +218,114 @@
     bioInput.addEventListener("input", updateCount);
     updateCount();
   }
+
+  const portfolioInput = document.getElementById("portfolio");
+  const portfolioDropzone = document.getElementById("portfolioDropzone");
+  const portfolioName = document.getElementById("portfolioName");
+  if (portfolioInput && portfolioDropzone && portfolioName) {
+    portfolioInput.addEventListener("change", () => {
+      portfolioName.textContent = portfolioInput.files && portfolioInput.files.length ? portfolioInput.files[0].name : "";
+    });
+    ["dragenter", "dragover"].forEach((eventName) => {
+      portfolioDropzone.addEventListener(eventName, (ev) => {
+        ev.preventDefault();
+        portfolioDropzone.classList.add("drag-over");
+      });
+    });
+    ["dragleave", "drop"].forEach((eventName) => {
+      portfolioDropzone.addEventListener(eventName, (ev) => {
+        ev.preventDefault();
+        portfolioDropzone.classList.remove("drag-over");
+      });
+    });
+    portfolioDropzone.addEventListener("drop", (ev) => {
+      if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
+      portfolioInput.files = ev.dataTransfer.files;
+      portfolioName.textContent = ev.dataTransfer.files[0].name;
+    });
+  }
+
+  const expertiseMulti = document.getElementById("expertiseMulti");
+  const expertiseOther = document.querySelector('input[name="expertise_other"]');
+  const hiddenSubject = document.getElementById("subject");
+  const writerApplyForm = document.getElementById("writerApplyForm");
+
+  function syncSubjectField() {
+    if (!hiddenSubject) return;
+    const selected = expertiseMulti
+      ? Array.from(expertiseMulti.selectedOptions).map((option) => option.value.trim()).filter(Boolean)
+      : [];
+    const extra = expertiseOther && expertiseOther.value ? expertiseOther.value.trim() : "";
+    const combined = extra ? selected.concat([extra]) : selected;
+    hiddenSubject.value = combined.join(", ");
+  }
+  if (expertiseMulti) expertiseMulti.addEventListener("change", syncSubjectField);
+  if (expertiseOther) expertiseOther.addEventListener("input", syncSubjectField);
+  if (writerApplyForm) writerApplyForm.addEventListener("submit", syncSubjectField);
+  syncSubjectField();
+
+  const answerInputs = Array.from(document.querySelectorAll(".quiz-answer"));
+  const status = document.getElementById("quizStatus");
+  const registerBtn = document.getElementById("registerWriterBtn");
+  const termsCheck = document.getElementById("writerTerms");
+  const answerKey = {{ quiz_answer_key|tojson }};
+  const passMark = Number("{{ pass_mark }}") || 75;
+
+  function evaluateQuiz() {
+    if (!answerInputs.length || !status || !registerBtn) return;
+    const keys = Object.keys(answerKey || {});
+    let answered = 0;
+    let correct = 0;
+
+    keys.forEach((key) => {
+      const checked = document.querySelector(`input[name="${key}"]:checked`);
+      if (checked) {
+        answered += 1;
+        if ((checked.value || "").toLowerCase() === (answerKey[key] || "").toLowerCase()) {
+          correct += 1;
+        }
+      }
+    });
+
+    const termsOk = termsCheck ? termsCheck.checked : true;
+    const score = keys.length ? Math.round((correct / keys.length) * 100) : 0;
+    if (answered < keys.length) {
+      status.textContent = `Answered ${answered}/${keys.length}. Complete all questions to unlock registration.`;
+      status.className = "small mb-2 text-muted";
+      registerBtn.disabled = true;
+      return;
+    }
+
+    if (score >= passMark && termsOk) {
+      status.textContent = `Score: ${score}%. Passed. You can now register as a writer.`;
+      status.className = "small mb-2 text-success";
+      registerBtn.disabled = false;
+      return;
+    }
+
+    if (score >= passMark && !termsOk) {
+      status.textContent = `Score: ${score}%. Accept Terms and Privacy Policy to continue.`;
+      status.className = "small mb-2 text-warning";
+      registerBtn.disabled = true;
+      return;
+    }
+
+    status.textContent = `Score: ${score}%. Minimum required is ${passMark}%.`;
+    status.className = "small mb-2 text-danger";
+    registerBtn.disabled = true;
+  }
+
+  answerInputs.forEach((input) => input.addEventListener("change", evaluateQuiz));
+  if (termsCheck) termsCheck.addEventListener("change", evaluateQuiz);
+  evaluateQuiz();
+
+  {% if form.errors or quiz_score is not none %}
+  if (stepOne && stepTwo && stepThree) {
+    stepOne.classList.add("d-none");
+    stepTwo.classList.add("d-none");
+    stepThree.classList.remove("d-none");
+    setActiveStep(3);
+  }
+  {% endif %}
 </script>
 {% endblock %}

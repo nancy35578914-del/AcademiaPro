@@ -73,7 +73,7 @@
                 <p class="text-muted mb-2">{{ sample.category }}</p>
                 <p class="card-text">{{ sample.content[:220] }}{% if sample.content|length > 220 %}...{% endif %}</p>
                 <div class="mt-auto d-flex flex-wrap gap-2">
-                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.sample_detail', sample_id=sample.id) }}">Quick View</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.sample_detail', sample_id=sample.id, source='public') }}">Quick View</a>
                   {% if sample.file_name %}
                     <a class="btn btn-sm btn-primary" href="{{ url_for('static', filename='uploads/samples/' ~ sample.file_name) }}" target="_blank">Download</a>
                   {% elif sample.source_url %}

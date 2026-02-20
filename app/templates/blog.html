@@ -3,17 +3,33 @@
 {% block content %}
 <div class="container py-5">
   <h2 class="mb-2 text-center fw-bold text-primary">Academic Resource Hub</h2>
-  <p class="text-center text-muted mb-4">Practical, student-friendly guides with actionable steps. Browse by pillar and dive into focused cluster topics.</p>
+  <p class="text-center text-muted mb-4">Deep pillar guides, focused cluster topics, and practical student articles in one searchable knowledge base.</p>
 
   <div class="section-card mb-4">
-    <h5 class="mb-2">Pillar Guides</h5>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <h5 class="mb-0">Pillar Guides</h5>
+      <span class="small text-muted">Evergreen cornerstone resources</span>
+    </div>
     <div class="row g-3">
       {% for p in pillars[:6] %}
+      {% set pillar_post = featured_pillar_posts.get(p) %}
       <div class="col-md-4">
-        <div class="writer-card h-100">
+        <div class="writer-card h-100 resource-card">
+          <div class="resource-icon"><i class="bi bi-book-half"></i></div>
           <h6>{{ p }}</h6>
-          <p class="small text-muted mb-2">In-depth foundational guide with practical steps and examples.</p>
-          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('main.blog_list', pillar=p) }}">Explore pillar</a>
+          <p class="small text-muted mb-2">{{ pillar_post.excerpt if pillar_post and pillar_post.excerpt else "Long-form guide with actionable examples and academic best practices." }}</p>
+          <div class="d-flex flex-wrap gap-1 mb-2">
+            <span class="badge bg-light text-dark border">Pillar Guide</span>
+            <span class="badge bg-light text-dark border">AcademicPro Editorial Team</span>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            {% if pillar_links.get(p) %}
+            <a class="btn btn-outline-secondary btn-sm" href="{{ pillar_links.get(p) }}" target="_blank" rel="noopener">Official Source</a>
+            {% endif %}
+            {% if pillar_post %}
+            <a class="btn btn-primary btn-sm" href="{{ url_for('main.blog_detail', id=pillar_post.id) }}">Read More</a>
+            {% endif %}
+          </div>
         </div>
       </div>
       {% else %}
@@ -23,14 +39,31 @@
   </div>
 
   <div class="section-card mb-4">
-    <h5 class="mb-2">Cluster Topics</h5>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <h5 class="mb-0">Cluster Topics</h5>
+      <span class="small text-muted">Short practical deep-dives</span>
+    </div>
     <div class="row g-3">
       {% for c in clusters[:9] %}
+      {% set cluster_post = featured_cluster_posts.get(c) %}
       <div class="col-md-4">
-        <a class="tile-soft h-100 d-block" href="{{ url_for('main.blog_list', cluster=c) }}">
+        <div class="tile-soft h-100 resource-card">
+          <div class="resource-icon"><i class="bi bi-journal-richtext"></i></div>
           <strong>{{ c }}</strong>
-          <p class="small text-muted mb-0">Focused deep-dive topic with actionable recommendations.</p>
-        </a>
+          <p class="small text-muted mb-2">{{ cluster_post.excerpt if cluster_post and cluster_post.excerpt else "Focused article with practical steps and implementation tips." }}</p>
+          <div class="d-flex flex-wrap gap-1 mb-2">
+            <span class="badge bg-light text-dark border">Cluster Topic</span>
+            <span class="badge bg-light text-dark border">Workflow</span>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            {% if cluster_links.get(c) %}
+            <a class="btn btn-outline-secondary btn-sm" href="{{ cluster_links.get(c) }}" target="_blank" rel="noopener">Official Source</a>
+            {% endif %}
+            {% if cluster_post %}
+            <a class="btn btn-primary btn-sm" href="{{ url_for('main.blog_detail', id=cluster_post.id) }}">Read More</a>
+            {% endif %}
+          </div>
+        </div>
       </div>
       {% else %}
       <div class="col-12"><div class="tile-soft text-muted">No cluster topics published yet.</div></div>
@@ -38,11 +71,12 @@
     </div>
   </div>
 
-  <form method="get" class="mb-4 row g-2">
+  <form method="get" class="mb-4 row g-2 section-card">
+    <div class="col-12"><h6 class="mb-0">Search and Filter</h6></div>
     <div class="col-md-4">
       <input type="text" name="q" value="{{ query }}" placeholder="Search resources..." class="form-control" />
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
       <select name="category" class="form-select">
         <option value="">All categories</option>
         {% for cat in categories %}
@@ -50,7 +84,7 @@
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
       <select name="pillar" class="form-select">
         <option value="">All pillars</option>
         {% for p in pillars %}
@@ -59,15 +93,55 @@
       </select>
     </div>
     <div class="col-md-2">
+      <select name="cluster" class="form-select">
+        <option value="">All clusters</option>
+        {% for c in clusters %}
+          <option value="{{ c }}" {% if selected_cluster == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
       <button class="btn btn-primary w-100" type="submit">Filter</button>
     </div>
+    <div class="col-md-2">
+      <a href="{{ url_for('main.blog_list') }}" class="btn btn-outline-secondary w-100">Reset</a>
+    </div>
   </form>
+
+  <div class="section-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <h5 class="mb-0">Articles Section</h5>
+      <span class="small text-muted">Dynamic updates and practical tips</span>
+    </div>
+    <div class="row g-3">
+      {% for article in dynamic_articles %}
+      <div class="col-md-6 col-lg-4">
+        <div class="resource-article-card h-100">
+          <h6 class="mb-1">{{ article.title }}</h6>
+          <div class="small text-muted mb-2">{{ article.created_at.strftime('%b %d, %Y') if article.created_at else '' }}</div>
+          <p class="small mb-2">{{ article.excerpt or (article.content[:130] ~ ('...' if article.content|length > 130 else '')) }}</p>
+          <div class="d-flex flex-wrap gap-1 mb-2">
+            <span class="badge bg-light text-dark border">{{ article.category }}</span>
+            {% if article.cluster_topic %}<span class="badge bg-light text-dark border">{{ article.cluster_topic }}</span>{% endif %}
+          </div>
+          <div class="small text-muted mb-2">By {{ article.author_name or "AcademicPro Editorial Team" }}</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('main.blog_detail', id=article.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
+            {% if category_links.get(article.category) %}
+            <a href="{{ category_links.get(article.category) }}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">Official Source</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
 
   {% if blogs and blogs.items %}
     <div class="row g-4">
       {% for blog in blogs.items %}
         <div class="col-md-6 col-lg-4">
-          <div class="card shadow-sm h-100 border-0">
+          <div class="card shadow-sm h-100 border-0 resource-article-card">
             <div class="card-body d-flex flex-column">
               <h5 class="card-title text-dark">{{ blog.title }}</h5>
               <p class="card-text text-muted small">{{ blog.created_at.strftime('%b %d, %Y') }}</p>
@@ -77,7 +151,7 @@
                 {% if blog.cluster_topic %}<span class="badge bg-light text-dark border">{{ blog.cluster_topic }}</span>{% endif %}
               </div>
               <p class="card-text flex-grow-1">{{ blog.excerpt or (blog.content[:220] ~ ('...' if blog.content|length > 220 else '')) }}</p>
-              <p class="small text-muted mb-0">By {{ blog.author_name or "AcademicPro Team" }}</p>
+              <p class="small text-muted mb-0">By {{ blog.author_name or "AcademicPro Editorial Team" }}</p>
               <div class="mt-2 text-end">
                 <a href="{{ url_for('main.blog_detail', id=blog.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
               </div>
