@@ -5,15 +5,15 @@
   <h1 class="display-5 fw-bold">Explore AcademicPro - Trusted Academic Support</h1>
   <p class="lead text-muted">Discover expert writing services, free learning resources, and a secure academic workflow.</p>
   <div class="d-flex justify-content-center gap-2 flex-wrap">
-    {% if current_user.is_authenticated and current_user.is_admin %}
+    {% if is_admin %}
     <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-primary btn-lg">Open Admin Dashboard</a>
     <a href="{{ url_for('main.admin_orders') }}" class="btn btn-warning btn-lg">Monitor Orders</a>
     <a href="{{ url_for('main.public_blogs') }}" class="btn btn-outline-primary btn-lg">Resource Hub</a>
-    {% elif current_user.is_authenticated and writer_enabled %}
+    {% elif is_writer %}
     <a href="{{ url_for('main.jobs') }}" class="btn btn-primary btn-lg">Open Job Board</a>
     <a href="{{ url_for('main.dashboard') }}" class="btn btn-warning btn-lg">Writer Dashboard</a>
     <a href="{{ url_for('main.public_blogs') }}" class="btn btn-outline-primary btn-lg">Resource Hub</a>
-    {% elif current_user.is_authenticated %}
+    {% elif is_authenticated %}
     <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg">Open Dashboard</a>
     <a href="{{ url_for('main.order') }}" class="btn btn-warning btn-lg">Place Order</a>
     <a href="{{ url_for('main.public_blogs') }}" class="btn btn-outline-primary btn-lg">Resource Hub</a>

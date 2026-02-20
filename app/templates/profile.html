@@ -6,6 +6,12 @@
     <div class="card shadow-sm border-0">
       <div class="card-body">
         <h1 class="h4 mb-3">Edit Profile</h1>
+        {% if current_user.photo %}
+        <div class="mb-3 d-flex align-items-center gap-2">
+          <img src="{{ url_for('static', filename='uploads/' ~ current_user.photo) }}" alt="Current profile photo" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">
+          <div class="small text-muted">Current profile photo</div>
+        </div>
+        {% endif %}
         <form method="POST" enctype="multipart/form-data">
           {{ form.hidden_tag() }}
           <div class="mb-3">{{ form.name.label(class='form-label') }} {{ form.name(class="form-control") }}</div>

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Testimonials | AcademicPro{% endblock %}
+{% block content %}
+<section class="section-card p-4">
+  <h1 class="h4 mb-2">Testimonials</h1>
+  <p class="mb-2">This page is available and currently being refreshed with updated content.</p>
+  <p class="text-muted mb-3">Use the links below to continue.</p>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-primary" href="{{ url_for('main.index') }}">Back to Home</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('main.public_blogs') }}">Open Resource Hub</a>
+  </div>
+</section>
+{% endblock %}

@@ -491,6 +491,9 @@ def index():
         job_apply_map=job_apply_map,
         fast_facts=fast_facts,
         recruitment=recruitment,
+        is_authenticated=bool(getattr(current_user, "is_authenticated", False)),
+        is_admin=bool(getattr(current_user, "is_authenticated", False) and getattr(current_user, "is_admin", False)),
+        is_writer=bool(getattr(current_user, "is_authenticated", False) and _is_approved_writer(current_user)),
     )
 
 

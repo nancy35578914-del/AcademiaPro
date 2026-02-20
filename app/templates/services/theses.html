@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Theses | AcademicPro{% endblock %}
+{% block content %}
+<section class="section-card p-4">
+  <h1 class="h4 mb-2">Theses</h1>
+  <p class="mb-2">This service page is available and currently being expanded with full details.</p>
+  <p class="text-muted mb-3">For immediate support, place an order and include your exact requirements.</p>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-warning" href="{{ url_for('main.order') }}">Place Order</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('main.services_page') }}">Back to Services</a>
+  </div>
+</section>
+{% endblock %}

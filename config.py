@@ -8,7 +8,7 @@ class Config:
         e.strip().lower()
         for e in os.environ.get(
             "ADMIN_EMAILS",
-            "bwamistevenez001@gmail.com,bwamistevenez@gmail.com",
+            "bwamistevenez001@gmail.com",
         ).split(",")
         if e.strip()
     ]

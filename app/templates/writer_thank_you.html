@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Application Submitted | AcademicPro{% endblock %}
+{% block content %}
+<section class="section-card p-4">
+  <h1 class="h4 mb-2">Thanks for your application</h1>
+  <p class="mb-2">Your writer application has been received and is now under review.</p>
+  <p class="text-muted mb-3">You will receive an update after admin completes screening.</p>
+  <a class="btn btn-primary" href="{{ url_for('main.writer_apply') }}">Back to Application</a>
+</section>
+{% endblock %}
